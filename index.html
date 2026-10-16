@@ -1,0 +1,1620 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- 앱스 스크립트에서 열면 서버 주소가 자동으로 들어가는 자리 (다른 곳에 올리면 설정 창에서 직접 입력) -->
+  <meta name="jarvis-api" content="<?= apiUrl ?>">
+  <title>J.A.R.V.I.S.</title>
+
+  <!-- 휴대폰 홈 화면 앱 설정 (깃허브 페이지에 올렸을 때 작동, 앱스 스크립트 주소에서는 무시됨) -->
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-title" content="자비스">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#020a18">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Orbitron:wght@500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+  <style>
+    /* ==========================================================
+       1. 색상과 기본 값 (푸른 HUD 계기판 분위기)
+       ========================================================== */
+    :root {
+      --bg: #020a18;
+      --bg-2: #06213f;
+      --panel: rgba(8, 40, 78, 0.38);
+      --panel-strong: rgba(12, 58, 108, 0.45);
+      --line: rgba(80, 200, 255, 0.28);
+      --line-strong: rgba(110, 220, 255, 0.65);
+      --text: #dff4ff;
+      --muted: #7fa6c4;
+      --cyan: #3fd0ff;
+      --teal: #5ff2e0;
+      --glow: rgba(63, 208, 255, 0.45);
+      --amber: #ffb547;
+      --red: #ff6470;
+      --green: #4fffb0;
+      --hud: var(--cyan);      /* 상태에 따라 바뀌는 코어 색 */
+      --radius: 16px;
+      --mono: 'Share Tech Mono', monospace;
+      --tech: 'Orbitron', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      color: var(--text);
+      background-color: var(--bg);
+      background:
+        radial-gradient(ellipse at 50% 35%, #0b3463 0%, var(--bg-2) 30%, var(--bg) 75%);
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+
+    /* 점 격자 배경 */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background-image: radial-gradient(rgba(110, 200, 255, 0.18) 1px, transparent 1.2px);
+      background-size: 22px 22px;
+    }
+
+    /* 미묘한 노이즈 질감 + 가장자리 어둡게 */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.6) 100%),
+        url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.07'/></svg>");
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 14px 16px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* ==========================================================
+       2. HUD 패널 공통 (유리 질감 + 모서리 꺾쇠 장식)
+       ========================================================== */
+    .panel {
+      position: relative;
+      background: linear-gradient(160deg, var(--panel-strong), var(--panel));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      backdrop-filter: blur(14px) saturate(140%);
+      -webkit-backdrop-filter: blur(14px) saturate(140%);
+      box-shadow: 0 0 24px rgba(30, 140, 255, 0.12), inset 0 0 22px rgba(63, 208, 255, 0.06);
+      padding: 14px 16px;
+    }
+
+    /* 왼쪽 위, 오른쪽 아래 꺾쇠 */
+    .panel::before, .panel::after {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--cyan);
+      filter: drop-shadow(0 0 4px var(--cyan));
+      pointer-events: none;
+    }
+    .panel::before { top: -1px; left: -1px; border-right: none; border-bottom: none; border-top-left-radius: var(--radius); }
+    .panel::after { bottom: -1px; right: -1px; border-left: none; border-top: none; border-bottom-right-radius: var(--radius); }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--tech);
+      font-size: 11px;
+      letter-spacing: 2.5px;
+      color: var(--cyan);
+      margin-bottom: 10px;
+      text-shadow: 0 0 8px var(--glow);
+    }
+
+    .panel-title small {
+      font-family: 'Noto Sans KR', sans-serif;
+      letter-spacing: 0;
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+
+    .empty { font-size: 12.5px; color: var(--muted); }
+
+    /* ==========================================================
+       3. 상단 바 (로고, 원형 제어 버튼 4개, 상태와 시계)
+       ========================================================== */
+    .topbar {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 16px;
+    }
+
+    .logo {
+      font-family: var(--tech);
+      font-weight: 700;
+      font-size: 19px;
+      letter-spacing: 5px;
+      color: var(--cyan);
+      text-shadow: 0 0 14px var(--glow);
+    }
+    .logo span { display: block; font-family: var(--mono); font-size: 10.5px; letter-spacing: 2px; color: var(--muted); font-weight: 400; }
+
+    .ctrls { display: flex; gap: 14px; }
+
+    .ctrl {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 10.5px;
+    }
+
+    .ctrl .ring-btn {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      border: 2px solid var(--line);
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+      background: radial-gradient(circle, rgba(63, 208, 255, 0.12), transparent 70%);
+      position: relative;
+      transition: all .2s;
+    }
+
+    /* 버튼 바깥 점선 고리 */
+    .ctrl .ring-btn::after {
+      content: '';
+      position: absolute;
+      inset: -6px;
+      border-radius: 50%;
+      border: 1px dashed rgba(63, 208, 255, 0.25);
+    }
+
+    .ctrl.on { color: var(--text); }
+    .ctrl.on .ring-btn {
+      border-color: var(--cyan);
+      box-shadow: 0 0 16px var(--glow), inset 0 0 12px var(--glow);
+    }
+    .ctrl.on .ring-btn::after { border-color: var(--cyan); animation: spin 6s linear infinite; }
+
+    .top-right { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12.5px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(0, 0, 0, 0.25);
+      white-space: nowrap;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+    .status[data-state="standby"] .dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
+    .status[data-state="listening"] .dot { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); animation: blink 1s infinite; }
+    .status[data-state="thinking"] .dot { background: var(--amber); box-shadow: 0 0 10px var(--amber); animation: blink .5s infinite; }
+    .status[data-state="speaking"] .dot { background: var(--teal); box-shadow: 0 0 12px var(--teal); }
+    .status[data-state="error"] .dot { background: var(--red); }
+
+    .clock { font-family: var(--mono); font-size: 20px; color: var(--cyan); text-shadow: 0 0 10px var(--glow); }
+
+    @keyframes blink { 50% { opacity: .3; } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ==========================================================
+       4. 메인 HUD 3단 배치 (왼쪽 패널 / 중앙 코어 / 오른쪽 패널)
+       ========================================================== */
+    .hud {
+      display: grid;
+      grid-template-columns: minmax(250px, 1fr) minmax(380px, 1.5fr) minmax(250px, 1fr);
+      grid-template-areas: "left center right";
+      gap: 14px;
+      align-items: start;
+    }
+    .col { display: flex; flex-direction: column; gap: 14px; }
+    .col.left { grid-area: left; }
+    .col.right { grid-area: right; }
+    .center { grid-area: center; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+
+    /* ----- 오늘 일정 목록 ----- */
+    .ev-list { list-style: none; display: flex; flex-direction: column; gap: 7px; max-height: 170px; overflow-y: auto; }
+    .ev-list li { display: flex; gap: 10px; font-size: 13px; align-items: baseline; }
+    .ev-list .t { font-family: var(--mono); color: var(--teal); min-width: 42px; }
+
+    /* ----- 할 일 막대그래프 ----- */
+    .bars { display: flex; align-items: flex-end; gap: 10px; height: 70px; padding: 0 4px; border-bottom: 1px solid var(--line); margin-bottom: 8px; }
+    .bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; height: 100%; justify-content: flex-end; }
+    .bar {
+      width: 100%;
+      max-width: 34px;
+      min-height: 3px;
+      border-radius: 4px 4px 0 0;
+      background: linear-gradient(180deg, var(--cyan), rgba(63, 208, 255, 0.15));
+      box-shadow: 0 0 10px var(--glow);
+      transition: height .6s ease;
+    }
+    .bar.hi { background: linear-gradient(180deg, var(--amber), rgba(255, 181, 71, 0.15)); }
+    .bar-num { font-family: var(--mono); font-size: 12px; }
+    .bar-labels { display: flex; gap: 10px; padding: 0 4px; margin-bottom: 8px; }
+    .bar-labels span { flex: 1; text-align: center; font-size: 11px; color: var(--muted); }
+    .due-list { list-style: none; display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; }
+    .due-list li { display: flex; justify-content: space-between; gap: 8px; }
+    .due-list .d { font-family: var(--mono); color: var(--muted); white-space: nowrap; }
+    .due-list li.over .d { color: var(--red); }
+
+    /* ----- 메일 원형 게이지 ----- */
+    .gauge-row { display: flex; align-items: center; gap: 14px; }
+    .gauge { position: relative; width: 110px; height: 110px; flex-shrink: 0; }
+    .gauge svg { width: 100%; height: 100%; }
+    .gauge .num {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      font-family: var(--tech);
+      font-size: 26px;
+      color: #fff;
+      text-shadow: 0 0 12px var(--cyan);
+    }
+    .gauge .spin-dash { transform-origin: 60px 60px; animation: spin 10s linear infinite; }
+    .mail-meta { font-size: 12.5px; line-height: 1.9; color: var(--muted); }
+    .mail-meta b { color: var(--text); font-family: var(--mono); font-size: 14px; }
+
+    /* ==========================================================
+       5. 중앙 코어 (원형 HUD, 상태에 따라 색과 회전 속도 변화)
+       ========================================================== */
+    .reactor {
+      width: min(100%, 480px);
+      aspect-ratio: 1;
+      cursor: pointer;
+      position: relative;
+      filter: drop-shadow(0 0 18px rgba(63, 208, 255, 0.35));
+    }
+    .reactor svg { width: 100%; height: 100%; overflow: visible; }
+
+    .reactor .s { stroke: var(--hud); fill: none; transition: stroke .4s; }
+    .reactor .f { fill: var(--hud); transition: fill .4s; }
+
+    /* 회전 그룹 (SVG 중심 200,200 기준) */
+    .reactor .rot { transform-box: view-box; transform-origin: 200px 200px; }
+    .r-slow { animation: spin 40s linear infinite; }
+    .r-mid { animation: spin 18s linear infinite reverse; }
+    .r-fast { animation: spin 9s linear infinite; }
+    .r-faster { animation: spin 5s linear infinite reverse; }
+
+    /* 상태별 연출 */
+    .reactor[data-state="idle"] { --hud: #2f86b8; filter: drop-shadow(0 0 8px rgba(63, 208, 255, 0.2)); }
+    .reactor[data-state="idle"] .rot { animation-play-state: paused; }
+    .reactor[data-state="standby"] { --hud: var(--cyan); }
+    .reactor[data-state="listening"] { --hud: var(--teal); }
+    .reactor[data-state="listening"] .core-glow { animation: pulse 1.1s ease-in-out infinite; }
+    .reactor[data-state="thinking"] { --hud: var(--amber); }
+    .reactor[data-state="thinking"] .r-slow { animation-duration: 6s; }
+    .reactor[data-state="thinking"] .r-mid { animation-duration: 3s; }
+    .reactor[data-state="thinking"] .r-fast { animation-duration: 1.6s; }
+    .reactor[data-state="speaking"] { --hud: #8ae8ff; }
+    .reactor[data-state="speaking"] .core-glow { animation: pulse .45s ease-in-out infinite; }
+    .reactor[data-state="error"] { --hud: var(--red); }
+
+    .core-glow { transform-box: view-box; transform-origin: 200px 200px; }
+    @keyframes pulse { 50% { transform: scale(1.14); opacity: .85; } }
+
+    .core-label { font-family: var(--tech); font-size: 15px; letter-spacing: 3px; fill: #ffffff; }
+    .core-sub { font-family: 'Noto Sans KR', sans-serif; font-size: 11px; fill: var(--hud); }
+
+    /* ----- 코어 아래: 화살표 줄 + 레이더 ----- */
+    .chev-row { display: flex; align-items: center; justify-content: center; gap: 16px; width: 100%; }
+    .chevs { display: flex; gap: 4px; }
+    .chevs i {
+      width: 18px;
+      height: 22px;
+      background: var(--cyan);
+      opacity: .15;
+      clip-path: polygon(0 0, 45% 0, 100% 50%, 45% 100%, 0 100%, 55% 50%);
+      animation: chev 1.6s infinite;
+    }
+    .chevs.left i { clip-path: polygon(100% 0, 55% 0, 0 50%, 55% 100%, 100% 100%, 45% 50%); }
+    .chevs i:nth-child(2) { animation-delay: .2s; }
+    .chevs i:nth-child(3) { animation-delay: .4s; }
+    .chevs i:nth-child(4) { animation-delay: .6s; }
+    .chevs.left i:nth-child(1) { animation-delay: .6s; }
+    .chevs.left i:nth-child(2) { animation-delay: .4s; }
+    .chevs.left i:nth-child(3) { animation-delay: .2s; }
+    .chevs.left i:nth-child(4) { animation-delay: 0s; }
+    @keyframes chev { 30% { opacity: .9; box-shadow: 0 0 10px var(--cyan); } }
+    body[data-state="thinking"] .chevs i { animation-duration: .6s; background: var(--amber); }
+    body[data-state="idle"] .chevs i { animation: none; }
+
+    .radar { width: 92px; height: 92px; flex-shrink: 0; }
+    .radar .sweep { transform-box: view-box; transform-origin: 50px 50px; animation: spin 3s linear infinite; }
+    body[data-state="idle"] .radar .sweep { animation-play-state: paused; opacity: .3; }
+    body[data-state="listening"] .radar .sweep { animation-duration: 1s; }
+
+    .hint { font-size: 12.5px; color: var(--muted); text-align: center; line-height: 1.7; }
+    .hint b { color: var(--cyan); font-weight: 500; }
+
+    /* ==========================================================
+       6. 오른쪽 패널 (시간 다이얼, 음성 파형, 시스템 상태, 빠른 명령)
+       ========================================================== */
+    .dial-wrap { display: flex; align-items: center; gap: 14px; }
+    .dial { width: 120px; height: 120px; flex-shrink: 0; }
+    .dial .hand { transform-box: view-box; transform-origin: 60px 60px; transition: transform .3s; }
+    .date-meta { font-family: var(--mono); font-size: 13px; line-height: 1.8; color: var(--muted); }
+    .date-meta b { display: block; font-family: var(--tech); font-size: 16px; color: var(--text); letter-spacing: 1px; }
+
+    canvas.wave { width: 100%; height: 70px; display: block; }
+
+    .sys { list-style: none; font-size: 12.5px; display: flex; flex-direction: column; gap: 6px; }
+    .sys li { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px dashed rgba(63, 208, 255, 0.15); padding-bottom: 5px; }
+    .sys li span:first-child { color: var(--muted); }
+    .sys li span:last-child { font-family: var(--mono); }
+    .ok { color: var(--green); }
+    .bad { color: var(--red); }
+
+    .quick { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+
+    .hbtn {
+      border: 1px solid var(--line);
+      background: rgba(63, 208, 255, 0.07);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px 8px;
+      font-size: 12.5px;
+      cursor: pointer;
+      font-family: inherit;
+      text-align: center;
+      transition: all .15s;
+    }
+    .hbtn:hover { border-color: var(--cyan); box-shadow: 0 0 10px var(--glow); }
+    .mini-btn { font-size: 11px; padding: 3px 8px; }
+
+    /* ==========================================================
+       7. 대화 기록과 입력창
+       ========================================================== */
+    .console { display: flex; flex-direction: column; gap: 10px; }
+
+    .log {
+      min-height: 160px;
+      max-height: 36vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-right: 4px;
+    }
+
+    .msg {
+      max-width: 86%;
+      padding: 11px 14px;
+      border-radius: 14px;
+      line-height: 1.65;
+      font-size: 14px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .msg.user { align-self: flex-end; background: rgba(63, 208, 255, 0.14); border: 1px solid rgba(63, 208, 255, 0.35); border-bottom-right-radius: 4px; }
+    .msg.jarvis { align-self: flex-start; background: rgba(0, 0, 0, 0.25); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+    .msg.system { align-self: center; font-size: 12px; color: var(--muted); padding: 2px 8px; }
+    .msg .who { display: block; font-family: var(--tech); font-size: 9.5px; letter-spacing: 2px; color: var(--cyan); margin-bottom: 4px; }
+
+    .copy-btn {
+      margin-top: 8px;
+      font-size: 11px;
+      color: var(--muted);
+      background: transparent;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 3px 8px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .copy-btn:hover { color: var(--text); border-color: var(--cyan); }
+
+    .composer { display: flex; gap: 8px; align-items: flex-end; }
+    .composer textarea {
+      flex: 1;
+      resize: none;
+      min-height: 44px;
+      max-height: 140px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: var(--text);
+      padding: 11px 12px;
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+    }
+    .composer textarea:focus { border-color: var(--cyan); box-shadow: 0 0 10px var(--glow); }
+
+    .btn {
+      height: 44px;
+      min-width: 44px;
+      padding: 0 16px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(63, 208, 255, 0.08);
+      color: var(--text);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 14px;
+    }
+    .btn.primary { background: linear-gradient(135deg, rgba(63, 208, 255, 0.4), rgba(63, 208, 255, 0.12)); border-color: var(--cyan); }
+    .btn.mic-on { background: rgba(95, 242, 224, 0.3); box-shadow: 0 0 14px var(--glow); }
+
+    /* ==========================================================
+       8. 설정 창
+       ========================================================== */
+    .modal-bg {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      padding: 16px;
+    }
+    .modal-bg.show { display: flex; }
+    .modal { width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; background: rgba(4, 22, 44, 0.92); }
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+    .field input, .field select {
+      width: 100%;
+      height: 42px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      color: var(--text);
+      padding: 0 12px;
+      font-family: inherit;
+      font-size: 14px;
+    }
+    .field input[type="range"] { padding: 0; height: 30px; }
+    .field small { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .meter { height: 6px; border-radius: 4px; background: rgba(255, 255, 255, 0.08); overflow: hidden; margin-top: 6px; }
+    .meter > div { height: 100%; width: 0%; background: linear-gradient(90deg, var(--cyan), var(--amber)); }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; flex-wrap: wrap; }
+
+    /* ==========================================================
+       9. 하단 저작권 표시
+       ========================================================== */
+    footer {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+      letter-spacing: .5px;
+    }
+
+    /* ==========================================================
+       10. 화면 크기별 배치
+       ========================================================== */
+    /* 태블릿·좁은 노트북: 코어를 위로, 패널은 아래 2열 */
+    @media (max-width: 1050px) {
+      .hud {
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas: "center center" "left right";
+      }
+      .reactor { width: min(100%, 400px); }
+    }
+
+    /* 휴대폰: 한 줄로 쌓기 */
+    @media (max-width: 640px) {
+      .app { padding: 10px 12px 0; }
+      .topbar { grid-template-columns: 1fr auto; grid-template-areas: "logo right" "ctrls ctrls"; }
+      .logo { grid-area: logo; font-size: 16px; }
+      .top-right { grid-area: right; }
+      .ctrls { grid-area: ctrls; justify-content: space-around; }
+      .clock { display: none; }
+      .hud { grid-template-columns: 1fr; grid-template-areas: "center" "left" "right"; }
+      .reactor { width: min(100%, 320px); }
+      .radar { width: 70px; height: 70px; }
+      .chevs i { width: 13px; height: 16px; }
+      .msg { max-width: 94%; }
+      .log { max-height: 46vh; }
+    }
+  </style>
+</head>
+<body data-state="idle">
+  <div class="app">
+
+    <!-- ===== 상단 바 ===== -->
+    <header class="panel topbar">
+      <div class="logo">J.A.R.V.I.S.<span>PERSONAL BUSINESS ASSISTANT</span></div>
+
+      <div class="ctrls">
+        <button class="ctrl" id="wakeToggle"><span class="ring-btn">🎙</span>상시 대기</button>
+        <button class="ctrl" id="clapToggle"><span class="ring-btn">👏</span>박수 감지</button>
+        <button class="ctrl on" id="voiceToggle"><span class="ring-btn" id="voiceIcon">🔊</span><span id="voiceLabel">음성 켜짐</span></button>
+        <button class="ctrl" id="settingsBtn"><span class="ring-btn">⚙</span>설정</button>
+      </div>
+
+      <div class="top-right">
+        <div class="status" id="status" data-state="idle"><span class="dot"></span><span id="statusText">대기 꺼짐</span></div>
+        <div class="clock" id="clock">00:00</div>
+      </div>
+    </header>
+
+    <!-- ===== 메인 HUD ===== -->
+    <main class="hud">
+
+      <!-- 왼쪽: 일정, 할 일, 메일 -->
+      <aside class="col left">
+        <section class="panel">
+          <div class="panel-title">TODAY SCHEDULE <small id="evCount">-</small></div>
+          <ul class="ev-list" id="evList"><li class="empty">연결 후 표시됩니다</li></ul>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">TASK MATRIX <small id="taskCount">-</small></div>
+          <div class="bars">
+            <div class="bar-wrap"><span class="bar-num" id="pHiN">0</span><div class="bar hi" id="pHi" style="height:3px"></div></div>
+            <div class="bar-wrap"><span class="bar-num" id="pMidN">0</span><div class="bar" id="pMid" style="height:3px"></div></div>
+            <div class="bar-wrap"><span class="bar-num" id="pLoN">0</span><div class="bar" id="pLo" style="height:3px"></div></div>
+          </div>
+          <div class="bar-labels"><span>높음</span><span>보통</span><span>낮음</span></div>
+          <ul class="due-list" id="dueList"><li class="empty">마감 임박 할 일 없음</li></ul>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">INBOX MONITOR <button class="hbtn mini-btn" data-q="안 읽은 신규 메일 파악해서 보고해줘">보고</button></div>
+          <div class="gauge-row">
+            <div class="gauge">
+              <svg viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="52" stroke="rgba(63,208,255,.15)" stroke-width="8" fill="none"/>
+                <!-- 안 읽은 메일 수에 따라 채워지는 고리 -->
+                <circle id="mailArc" cx="60" cy="60" r="52" stroke="#3fd0ff" stroke-width="8" fill="none"
+                        stroke-linecap="round" stroke-dasharray="0 327" transform="rotate(-90 60 60)"
+                        style="filter:drop-shadow(0 0 5px #3fd0ff);transition:stroke-dasharray .8s"/>
+                <circle class="spin-dash" cx="60" cy="60" r="40" stroke="rgba(95,242,224,.5)" stroke-width="2" fill="none" stroke-dasharray="3 6"/>
+                <circle cx="60" cy="60" r="33" fill="rgba(63,208,255,.08)" stroke="rgba(63,208,255,.4)"/>
+              </svg>
+              <div class="num" id="mailNum">--</div>
+            </div>
+            <div class="mail-meta">
+              안 읽은 메일 <b id="mailUnread">-</b><br>
+              네이버 전달 <b id="mailNaver">-</b><br>
+              <span style="font-size:11px">게이지 최대 50통 기준</span>
+            </div>
+          </div>
+        </section>
+      </aside>
+
+      <!-- 중앙: 원형 코어 -->
+      <section class="center">
+        <div class="reactor" id="reactor" data-state="idle" title="눌러서 바로 말하기 (말하는 중에 누르면 멈춤)">
+          <svg viewBox="0 0 400 400" id="reactorSvg">
+            <defs>
+              <radialGradient id="coreGrad" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
+                <stop offset="35%" stop-color="#9eefff" stop-opacity=".9"/>
+                <stop offset="100%" stop-color="#3fd0ff" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
+
+            <!-- 가장 바깥 얇은 고리 -->
+            <circle class="s" cx="200" cy="200" r="196" stroke-width="1" opacity=".25"/>
+
+            <!-- 바깥 눈금 고리 (자바스크립트로 눈금 생성) -->
+            <g class="rot r-slow" id="ticks"></g>
+
+            <!-- 굵은 분절 고리 -->
+            <g class="rot r-mid">
+              <circle class="s" cx="200" cy="200" r="162" stroke-width="10" stroke-dasharray="22 9" opacity=".35"/>
+            </g>
+
+            <!-- 밝은 주 고리 -->
+            <circle class="s" cx="200" cy="200" r="150" stroke-width="3" style="filter:drop-shadow(0 0 6px var(--hud))"/>
+
+            <!-- 긴 호 두 개 (빠르게 회전) -->
+            <g class="rot r-fast">
+              <circle class="s" cx="200" cy="200" r="138" stroke-width="4" stroke-dasharray="200 233.5" opacity=".8"/>
+            </g>
+
+            <!-- 블록 고리 -->
+            <g class="rot r-faster">
+              <circle class="s" cx="200" cy="200" r="118" stroke-width="14" stroke-dasharray="5 9" opacity=".3"/>
+            </g>
+
+            <!-- 안쪽 얇은 고리들 -->
+            <circle class="s" cx="200" cy="200" r="98" stroke-width="1" opacity=".6"/>
+            <g class="rot r-mid">
+              <circle class="s" cx="200" cy="200" r="86" stroke-width="2" stroke-dasharray="60 20 10 20" opacity=".7"/>
+            </g>
+            <circle class="s" cx="200" cy="200" r="70" stroke-width="1" stroke-dasharray="2 4" opacity=".6"/>
+
+            <!-- 십자 조준선 -->
+            <line class="s" x1="200" y1="105" x2="200" y2="135" stroke-width="1.5" opacity=".7"/>
+            <line class="s" x1="200" y1="265" x2="200" y2="295" stroke-width="1.5" opacity=".7"/>
+            <line class="s" x1="105" y1="200" x2="135" y2="200" stroke-width="1.5" opacity=".7"/>
+            <line class="s" x1="265" y1="200" x2="295" y2="200" stroke-width="1.5" opacity=".7"/>
+
+            <!-- 중앙 빛 -->
+            <g class="core-glow">
+              <circle cx="200" cy="200" r="58" fill="url(#coreGrad)" opacity=".55"/>
+              <circle class="s" cx="200" cy="200" r="46" stroke-width="2" opacity=".9"/>
+            </g>
+
+            <!-- 중앙 글자 -->
+            <text class="core-label" id="coreLabel" x="200" y="198" text-anchor="middle">OFFLINE</text>
+            <text class="core-sub" id="coreSub" x="200" y="218" text-anchor="middle">대기 꺼짐</text>
+          </svg>
+        </div>
+
+        <div class="chev-row">
+          <div class="chevs left"><i></i><i></i><i></i><i></i></div>
+          <svg class="radar" viewBox="0 0 100 100">
+            <defs>
+              <linearGradient id="sweepGrad" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#3fd0ff" stop-opacity="0"/>
+                <stop offset="100%" stop-color="#3fd0ff" stop-opacity=".7"/>
+              </linearGradient>
+            </defs>
+            <circle cx="50" cy="50" r="46" fill="rgba(63,208,255,.06)" stroke="rgba(63,208,255,.5)"/>
+            <circle cx="50" cy="50" r="30" fill="none" stroke="rgba(63,208,255,.3)"/>
+            <circle cx="50" cy="50" r="14" fill="none" stroke="rgba(63,208,255,.3)"/>
+            <line x1="4" y1="50" x2="96" y2="50" stroke="rgba(63,208,255,.25)"/>
+            <line x1="50" y1="4" x2="50" y2="96" stroke="rgba(63,208,255,.25)"/>
+            <path class="sweep" d="M50 50 L96 50 A46 46 0 0 0 82.5 17.5 Z" fill="url(#sweepGrad)"/>
+          </svg>
+          <div class="chevs"><i></i><i></i><i></i><i></i></div>
+        </div>
+
+        <p class="hint">
+          <b>상시 대기</b>를 켜고 <b>"자비스"</b>라고 부르거나 <b>박수를 두 번</b> 치세요.<br>
+          코어를 누르면 호출어 없이 바로 말할 수 있습니다.
+        </p>
+      </section>
+
+      <!-- 오른쪽: 시간 다이얼, 음성 파형, 시스템, 빠른 명령 -->
+      <aside class="col right">
+        <section class="panel">
+          <div class="panel-title">CHRONO <small>KST</small></div>
+          <div class="dial-wrap">
+            <svg class="dial" viewBox="0 0 120 120" id="dial">
+              <circle cx="60" cy="60" r="56" fill="rgba(63,208,255,.05)" stroke="rgba(63,208,255,.55)" stroke-width="1.5"/>
+              <circle cx="60" cy="60" r="47" fill="none" stroke="rgba(63,208,255,.2)" stroke-dasharray="1 3"/>
+              <g id="dialTicks"></g>
+              <text x="60" y="17" text-anchor="middle" font-size="9" fill="#7fa6c4" font-family="Orbitron">12</text>
+              <text x="106" y="63" text-anchor="middle" font-size="9" fill="#7fa6c4" font-family="Orbitron">3</text>
+              <text x="60" y="109" text-anchor="middle" font-size="9" fill="#7fa6c4" font-family="Orbitron">6</text>
+              <text x="14" y="63" text-anchor="middle" font-size="9" fill="#7fa6c4" font-family="Orbitron">9</text>
+              <line class="hand" id="hHour" x1="60" y1="60" x2="60" y2="33" stroke="#dff4ff" stroke-width="3" stroke-linecap="round"/>
+              <line class="hand" id="hMin" x1="60" y1="60" x2="60" y2="20" stroke="#3fd0ff" stroke-width="2" stroke-linecap="round"/>
+              <line class="hand" id="hSec" x1="60" y1="66" x2="60" y2="16" stroke="#5ff2e0" stroke-width="1"/>
+              <circle cx="60" cy="60" r="4" fill="#3fd0ff"/>
+            </svg>
+            <div class="date-meta"><b id="dateBig">--.--</b><span id="dateDay">-</span><br><span id="dateYear">-</span></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">VOICE SIGNAL <small id="waveLabel">대기</small></div>
+          <canvas class="wave" id="wave"></canvas>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">SYSTEM <button class="hbtn mini-btn" id="refreshBtn">새로고침</button></div>
+          <ul class="sys">
+            <li><span>서버 연결</span><span id="sysConn">확인 전</span></li>
+            <li><span>음성 방식</span><span id="sysVoice">-</span></li>
+            <li><span>마지막 응답 시간</span><span id="sysLatency">-</span></li>
+            <li><span>데이터 갱신</span><span id="sysSync">-</span></li>
+          </ul>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">QUICK COMMAND</div>
+          <div class="quick">
+            <button class="hbtn" data-q="오늘 일정 알려줘">오늘 일정</button>
+            <button class="hbtn" data-q="이번 주 할 일 정리해줘">이번 주 할 일</button>
+            <button class="hbtn" data-q="오늘 전 세계 주요 이슈 알려줘">세계 주요 이슈</button>
+            <button class="hbtn" data-q="네이버 메일로 들어온 최근 메일 정리해줘">네이버 메일</button>
+            <button class="hbtn" data-q="Vestel 건 최근 메일 확인하고 회신 메일 초안 써줘">Vestel 회신 초안</button>
+            <button class="hbtn" data-q="Sony 고객사 이력 정리해줘">Sony 이력</button>
+          </div>
+        </section>
+      </aside>
+    </main>
+
+    <!-- ===== 대화 기록과 입력창 ===== -->
+    <section class="panel console">
+      <div class="panel-title">COMMUNICATION LOG</div>
+      <div class="log" id="log"></div>
+      <div class="composer">
+        <textarea id="input" rows="1" placeholder="자비스에게 명령하기 (엔터로 전송, 줄바꿈은 Shift+엔터)"></textarea>
+        <button class="btn" id="micBtn" title="한 번 말하기">🎤</button>
+        <button class="btn primary" id="sendBtn">전송</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===== 설정 창 ===== -->
+  <div class="modal-bg" id="modalBg">
+    <div class="panel modal">
+      <div class="panel-title">SETTINGS <small>자비스 설정</small></div>
+
+      <div class="field">
+        <label>서버 주소 (웹앱 URL)</label>
+        <input id="cfgUrl" placeholder="https://script.google.com/macros/s/.../exec">
+        <small>앱스 스크립트 주소로 접속했다면 자동으로 채워집니다.</small>
+      </div>
+
+      <div class="field">
+        <label>접속 암호 (ACCESS_TOKEN)</label>
+        <input id="cfgToken" type="password" placeholder="스크립트 속성에 등록한 암호">
+        <small>이 기기에만 저장됩니다. 공용 PC에서는 사용 후 지워 주세요.</small>
+      </div>
+
+      <div class="field">
+        <label>목소리 방식</label>
+        <select id="cfgVoice">
+          <option value="gemini">Gemini 집사 목소리 (고품질, 약간 느림)</option>
+          <option value="browser">브라우저 기본 음성 (빠름, 무료)</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>박수 감지 민감도 (<span id="clapVal">0.35</span>)</label>
+        <input id="cfgClap" type="range" min="0.10" max="0.80" step="0.05" value="0.35">
+        <small>값이 낮을수록 작은 소리에도 반응합니다. 박수 감지를 켠 상태에서 박수를 쳐 보며 막대가 끝까지 차는지 확인하세요.</small>
+        <div class="meter"><div id="meterBar"></div></div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn" id="cfgTest">연결 테스트</button>
+        <button class="btn" id="cfgClose">닫기</button>
+        <button class="btn primary" id="cfgSave">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>© 2026 (Eddie). All Rights Rights.</footer>
+
+  <script>
+    /* ==========================================================
+       1. 저장소 보조 (브라우저 저장 공간이 막혀도 앱이 멈추지 않게)
+       ========================================================== */
+    const store = {
+      get(key, fallback) {
+        try {
+          const v = localStorage.getItem(key);
+          return v === null ? fallback : v;
+        } catch (e) { return fallback; }
+      },
+      set(key, value) {
+        try { localStorage.setItem(key, value); } catch (e) { /* 저장 불가 환경은 무시 */ }
+      }
+    };
+
+    /* ==========================================================
+       2. 기본 설정 불러오기
+       ========================================================== */
+    const injected = document.querySelector('meta[name="jarvis-api"]').getAttribute('content') || '';
+    const settings = {
+      // 앱스 스크립트에서 열었으면 자동 주소, 아니면 저장된 주소 사용
+      url: injected.indexOf('https://') === 0 ? injected : store.get('jarvis_url', ''),
+      token: store.get('jarvis_token', ''),
+      voiceMode: store.get('jarvis_voice', 'gemini'),
+      voiceOn: store.get('jarvis_voice_on', '1') === '1',
+      clapThreshold: parseFloat(store.get('jarvis_clap', '0.35'))
+    };
+
+    // 호출어로 인식할 단어 (발음이 비슷하게 인식되는 경우까지 포함)
+    const WAKE_WORDS = /(자비스|쟈비스|자비쓰|자비즈|자빗|jarvis|javis|jervis)/i;
+
+    /* ==========================================================
+       3. 화면 요소와 상태 값
+       ========================================================== */
+    const $ = (id) => document.getElementById(id);
+    const logEl = $('log');
+    const inputEl = $('input');
+
+    let state = 'idle';           // idle | standby | listening | thinking | speaking | error
+    let wakeOn = false;           // 상시 대기 켜짐 여부
+    let clapOn = false;           // 박수 감지 켜짐 여부
+    let awaitingCommand = false;  // 호출 후 명령을 기다리는 중인지
+    let awaitTimer = null;
+    let busy = false;             // 서버 처리 중 여부
+    let speaking = false;         // 자비스가 말하는 중 여부
+    let micLevel = 0;             // 마이크 소리 크기 (파형 표시용)
+
+    // 상태별 코어 글자
+    const STATE_TEXT = {
+      idle: ['OFFLINE', '대기 꺼짐'],
+      standby: ['STANDBY', '호출 대기 중'],
+      listening: ['LISTENING', '듣고 있습니다'],
+      thinking: ['PROCESSING', '처리 중'],
+      speaking: ['RESPONDING', '응답 중'],
+      error: ['ALERT', '오류']
+    };
+
+    // 상태 바꾸기: 상단 표시, 코어 색과 회전, 레이더, 화살표가 함께 바뀐다
+    function setState(s, label) {
+      state = s;
+      const t = STATE_TEXT[s] || [s.toUpperCase(), s];
+      $('status').dataset.state = s;
+      $('statusText').textContent = label || t[1];
+      $('reactor').dataset.state = s;
+      document.body.dataset.state = s;
+      $('coreLabel').textContent = t[0];
+      $('coreSub').textContent = label || t[1];
+      $('waveLabel').textContent = label || t[1];
+    }
+
+    function backToRest() {
+      if (wakeOn || clapOn) setState('standby');
+      else setState('idle');
+    }
+
+    /* ==========================================================
+       4. 코어 눈금, 시계 다이얼 눈금 그리기
+       ========================================================== */
+    (function drawTicks() {
+      const NS = 'http://www.w3.org/2000/svg';
+      const g = $('ticks');
+      for (let i = 0; i < 120; i++) {
+        const a = (i / 120) * Math.PI * 2;
+        const long = i % 10 === 0;
+        const r1 = long ? 172 : 178, r2 = 186;
+        const l = document.createElementNS(NS, 'line');
+        l.setAttribute('x1', 200 + Math.cos(a) * r1);
+        l.setAttribute('y1', 200 + Math.sin(a) * r1);
+        l.setAttribute('x2', 200 + Math.cos(a) * r2);
+        l.setAttribute('y2', 200 + Math.sin(a) * r2);
+        l.setAttribute('class', 's');
+        l.setAttribute('stroke-width', long ? 2.5 : 1);
+        l.setAttribute('opacity', long ? 0.95 : 0.5);
+        g.appendChild(l);
+      }
+      const d = $('dialTicks');
+      for (let i = 0; i < 60; i++) {
+        const a = (i / 60) * Math.PI * 2;
+        const long = i % 5 === 0;
+        const l = document.createElementNS(NS, 'line');
+        l.setAttribute('x1', 60 + Math.cos(a) * (long ? 44 : 48));
+        l.setAttribute('y1', 60 + Math.sin(a) * (long ? 44 : 48));
+        l.setAttribute('x2', 60 + Math.cos(a) * 52);
+        l.setAttribute('y2', 60 + Math.sin(a) * 52);
+        l.setAttribute('stroke', long ? '#3fd0ff' : 'rgba(63,208,255,.35)');
+        l.setAttribute('stroke-width', long ? 1.8 : 0.8);
+        d.appendChild(l);
+      }
+    })();
+
+    /* ==========================================================
+       5. 시계 (상단 디지털 + 오른쪽 아날로그 다이얼)
+       ========================================================== */
+    const DAYS = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+    function tickClock() {
+      // 한국 시간 기준으로 계산
+      const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+      const h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+      $('clock').textContent = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+      $('hHour').style.transform = 'rotate(' + ((h % 12) * 30 + m * 0.5) + 'deg)';
+      $('hMin').style.transform = 'rotate(' + (m * 6 + s * 0.1) + 'deg)';
+      $('hSec').style.transform = 'rotate(' + (s * 6) + 'deg)';
+      $('dateBig').textContent = String(now.getMonth() + 1).padStart(2, '0') + '.' + String(now.getDate()).padStart(2, '0');
+      $('dateDay').textContent = DAYS[now.getDay()];
+      $('dateYear').textContent = now.getFullYear();
+    }
+    tickClock();
+    setInterval(tickClock, 1000);
+
+    /* ==========================================================
+       6. 음성 파형 (마이크 소리 또는 말하는 상태를 막대로 표현)
+       ========================================================== */
+    const canvas = $('wave');
+    const cctx = canvas.getContext('2d');
+    let wavePhase = 0;
+    function drawWave() {
+      const dpr = window.devicePixelRatio || 1;
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      if (canvas.width !== w * dpr) { canvas.width = w * dpr; canvas.height = h * dpr; }
+      cctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      cctx.clearRect(0, 0, w, h);
+
+      // 상태별 진폭: 말하는 중 크게, 듣는 중 마이크 크기 반영, 대기 중 잔잔하게
+      let amp = 0.06;
+      if (state === 'speaking') amp = 0.55 + Math.random() * 0.35;
+      else if (state === 'listening') amp = Math.max(0.15, Math.min(1, micLevel * 6));
+      else if (state === 'thinking') amp = 0.25;
+      else if (state === 'standby') amp = Math.max(0.08, Math.min(0.6, micLevel * 6));
+
+      const bars = Math.floor(w / 6);
+      const color = getComputedStyle($('reactor')).getPropertyValue('--hud').trim() || '#3fd0ff';
+      cctx.fillStyle = color;
+      cctx.shadowColor = color;
+      cctx.shadowBlur = 6;
+      for (let i = 0; i < bars; i++) {
+        const x = i * 6;
+        const env = Math.sin((i / bars) * Math.PI); // 가운데가 높은 모양
+        const v = Math.abs(Math.sin(i * 0.45 + wavePhase) * Math.cos(i * 0.13 - wavePhase * 0.7));
+        const bh = Math.max(2, v * env * amp * h);
+        cctx.globalAlpha = 0.35 + env * 0.6;
+        cctx.fillRect(x, (h - bh) / 2, 3, bh);
+      }
+      cctx.globalAlpha = 1;
+      wavePhase += state === 'speaking' ? 0.35 : 0.08;
+      requestAnimationFrame(drawWave);
+    }
+    requestAnimationFrame(drawWave);
+
+    /* ==========================================================
+       7. 대화 기록 표시
+       ========================================================== */
+    function addMsg(role, text) {
+      const div = document.createElement('div');
+      div.className = 'msg ' + role;
+
+      if (role !== 'system') {
+        const who = document.createElement('span');
+        who.className = 'who';
+        who.textContent = role === 'user' ? 'YOU' : 'J.A.R.V.I.S.';
+        div.appendChild(who);
+      }
+
+      const body = document.createElement('div');
+      body.textContent = text;
+      div.appendChild(body);
+
+      // 자비스 답변에는 복사 버튼 추가 (메일 초안 복사용)
+      if (role === 'jarvis') {
+        const btn = document.createElement('button');
+        btn.className = 'copy-btn';
+        btn.textContent = '복사';
+        btn.onclick = () => {
+          navigator.clipboard.writeText(text).then(() => {
+            btn.textContent = '복사됨';
+            setTimeout(() => (btn.textContent = '복사'), 1500);
+          }).catch(() => { btn.textContent = '복사 실패'; });
+        };
+        div.appendChild(btn);
+      }
+
+      logEl.appendChild(div);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    /* ==========================================================
+       8. 서버 통신 공통 함수
+       ========================================================== */
+    async function api(payload) {
+      // 내용 형식을 따로 지정하지 않아야 앱스 스크립트와 통신이 막히지 않는다
+      const res = await fetch(settings.url, {
+        method: 'POST',
+        body: JSON.stringify(Object.assign({ token: settings.token }, payload))
+      });
+      return res.json();
+    }
+
+    function setConn(ok, text) {
+      $('sysConn').textContent = text;
+      $('sysConn').className = ok ? 'ok' : 'bad';
+    }
+
+    /* ==========================================================
+       9. 명령 보내기 (자비스와 대화)
+       ========================================================== */
+    async function sendCommand(text) {
+      text = (text || '').trim();
+      if (!text || busy) return;
+
+      if (!settings.url || !settings.token) {
+        addMsg('system', '설정에서 서버 주소와 접속 암호를 먼저 입력해 주세요.');
+        openSettings();
+        return;
+      }
+
+      busy = true;
+      clearAwait();
+      addMsg('user', text);
+      setState('thinking');
+      const t0 = performance.now();
+
+      try {
+        const data = await api({
+          action: 'chat',
+          message: text,
+          device: /Mobi/i.test(navigator.userAgent) ? 'mobile' : 'pc',
+          wantAudio: settings.voiceOn && settings.voiceMode === 'gemini'
+        });
+
+        $('sysLatency').textContent = ((performance.now() - t0) / 1000).toFixed(1) + '초';
+
+        if (!data.ok) {
+          addMsg('system', '오류: ' + data.error);
+          setConn(false, '오류');
+          setState('error');
+          setTimeout(backToRest, 2500);
+          return;
+        }
+
+        setConn(true, '정상');
+        addMsg('jarvis', data.reply);
+
+        // 음성 응답 (Gemini 음성 실패 시 브라우저 음성으로 대체)
+        if (settings.voiceOn) {
+          if (data.audio) await playGeminiAudio(data.audio);
+          else await speakBrowser(data.speech || data.reply);
+        }
+
+        // 할 일 등록 등으로 바뀐 내용이 패널에 반영되도록 갱신
+        loadDashboard();
+      } catch (err) {
+        addMsg('system', '서버에 연결하지 못했습니다. 주소와 배포 설정을 확인해 주세요. (' + err.message + ')');
+        setConn(false, '연결 실패');
+        setState('error');
+        setTimeout(backToRest, 2500);
+      } finally {
+        busy = false;
+        if (state !== 'error') backToRest();
+      }
+    }
+
+    /* ==========================================================
+       10. HUD 패널 데이터 (일정, 할 일, 메일)
+       ========================================================== */
+    async function loadDashboard() {
+      if (!settings.url || !settings.token) return;
+      try {
+        const res = await api({ action: 'dashboard' });
+        if (!res.ok) { setConn(false, '인증 오류'); return; }
+        setConn(true, '정상');
+        renderDashboard(res.data);
+        $('sysSync').textContent = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+      } catch (e) {
+        setConn(false, '연결 실패');
+      }
+    }
+
+    function renderDashboard(d) {
+      // 오늘 일정
+      const evList = $('evList');
+      evList.innerHTML = '';
+      $('evCount').textContent = d.events.length + '건';
+      if (!d.events.length) {
+        evList.innerHTML = '<li class="empty">오늘 예정된 일정이 없습니다</li>';
+      } else {
+        d.events.forEach(ev => {
+          const li = document.createElement('li');
+          const t = document.createElement('span');
+          t.className = 't';
+          t.textContent = ev.time;
+          const title = document.createElement('span');
+          title.textContent = ev.title;
+          li.append(t, title);
+          evList.appendChild(li);
+        });
+      }
+
+      // 할 일 막대 (가장 많은 우선순위를 100% 높이로)
+      const p = d.priority || {};
+      const hi = p['높음'] || 0, mid = p['보통'] || 0, lo = p['낮음'] || 0;
+      const max = Math.max(1, hi, mid, lo);
+      $('pHi').style.height = Math.max(3, (hi / max) * 52) + 'px';
+      $('pMid').style.height = Math.max(3, (mid / max) * 52) + 'px';
+      $('pLo').style.height = Math.max(3, (lo / max) * 52) + 'px';
+      $('pHiN').textContent = hi;
+      $('pMidN').textContent = mid;
+      $('pLoN').textContent = lo;
+      $('taskCount').textContent = '진행중 ' + d.openTasks + '건';
+
+      const dueList = $('dueList');
+      dueList.innerHTML = '';
+      if (!d.dueSoon.length) {
+        dueList.innerHTML = '<li class="empty">3일 내 마감 할 일 없음</li>';
+      } else {
+        d.dueSoon.forEach(t => {
+          const li = document.createElement('li');
+          if (t.overdue) li.className = 'over';
+          const a = document.createElement('span');
+          a.textContent = (t.overdue ? '⚠ ' : '') + t.title;
+          const b = document.createElement('span');
+          b.className = 'd';
+          b.textContent = t.due.slice(5);
+          li.append(a, b);
+          dueList.appendChild(li);
+        });
+      }
+
+      // 메일 게이지 (50통을 가득 찬 기준으로 표시)
+      const unread = d.unread || 0;
+      const circ = 2 * Math.PI * 52;
+      const filled = Math.min(1, unread / 50) * circ;
+      $('mailArc').setAttribute('stroke-dasharray', filled + ' ' + circ);
+      $('mailArc').setAttribute('stroke', unread >= 30 ? '#ffb547' : '#3fd0ff');
+      $('mailNum').textContent = unread > 99 ? '99+' : unread;
+      $('mailUnread').textContent = unread + '통';
+      $('mailNaver').textContent = (d.naverUnread || 0) + '통';
+    }
+
+    // 5분마다 자동 갱신
+    setInterval(loadDashboard, 5 * 60 * 1000);
+    $('refreshBtn').onclick = loadDashboard;
+
+    /* ==========================================================
+       11. 목소리 재생
+       ========================================================== */
+    const player = new Audio();
+
+    // Gemini 음성 데이터는 원음(PCM) 형태라 재생 가능한 WAV 형식으로 감싸 준다
+    function pcmToWavUrl(base64, sampleRate) {
+      const bin = atob(base64);
+      const len = bin.length;
+      const buffer = new ArrayBuffer(44 + len);
+      const v = new DataView(buffer);
+      const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+      w(0, 'RIFF'); v.setUint32(4, 36 + len, true); w(8, 'WAVE');
+      w(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+      v.setUint32(24, sampleRate, true); v.setUint32(28, sampleRate * 2, true);
+      v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+      w(36, 'data'); v.setUint32(40, len, true);
+      const bytes = new Uint8Array(buffer, 44);
+      for (let i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
+      return URL.createObjectURL(new Blob([buffer], { type: 'audio/wav' }));
+    }
+
+    function playGeminiAudio(audio) {
+      return new Promise((resolve) => {
+        let url;
+        const mime = (audio.mimeType || '').toLowerCase();
+        if (mime.indexOf('wav') > -1 || mime.indexOf('mpeg') > -1 || mime.indexOf('mp3') > -1 || mime.indexOf('ogg') > -1) {
+          url = 'data:' + audio.mimeType + ';base64,' + audio.data;
+        } else {
+          const m = mime.match(/rate=(\d+)/);
+          url = pcmToWavUrl(audio.data, m ? parseInt(m[1], 10) : 24000);
+        }
+        startSpeaking();
+        player.src = url;
+        player.onended = () => { stopSpeaking(); resolve(); };
+        player.onerror = () => { stopSpeaking(); resolve(); };
+        player.play().catch(() => { stopSpeaking(); resolve(); });
+      });
+    }
+
+    // 브라우저 기본 음성 (한국어는 한국어 음성, 영어는 영국식 남성 음성 우선)
+    function speakBrowser(text) {
+      return new Promise((resolve) => {
+        if (!('speechSynthesis' in window)) return resolve();
+        const u = new SpeechSynthesisUtterance(text);
+        const isKorean = /[가-힣]/.test(text);
+        const voices = speechSynthesis.getVoices();
+        let voice;
+        if (isKorean) {
+          voice = voices.find(v => v.lang === 'ko-KR');
+          u.lang = 'ko-KR';
+        } else {
+          voice = voices.find(v => /en-GB/i.test(v.lang) && /male|daniel|george|arthur/i.test(v.name))
+            || voices.find(v => /en-GB/i.test(v.lang));
+          u.lang = 'en-GB';
+        }
+        if (voice) u.voice = voice;
+        u.rate = 1.0;
+        u.pitch = 0.9; // 살짝 낮은 톤으로 차분하게
+        u.onend = () => { stopSpeaking(); resolve(); };
+        u.onerror = () => { stopSpeaking(); resolve(); };
+        startSpeaking();
+        speechSynthesis.cancel();
+        speechSynthesis.speak(u);
+      });
+    }
+
+    // 말하는 동안에는 자기 목소리를 호출어로 오인하지 않도록 듣기를 잠시 멈춘다
+    function startSpeaking() {
+      speaking = true;
+      setState('speaking');
+      pauseRecognition();
+    }
+
+    function stopSpeaking() {
+      speaking = false;
+      resumeRecognition();
+    }
+
+    // 호출 확인음 (짧은 전자음)
+    let audioCtx = null;
+    function chime() {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(880, audioCtx.currentTime);
+        o.frequency.exponentialRampToValueAtTime(1320, audioCtx.currentTime + 0.12);
+        g.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+        o.connect(g).connect(audioCtx.destination);
+        o.start();
+        o.stop(audioCtx.currentTime + 0.26);
+      } catch (e) { /* 소리 장치 문제는 무시 */ }
+    }
+
+    /* ==========================================================
+       12. 음성 인식 (호출어 "자비스" 감지와 명령 받아쓰기)
+       ========================================================== */
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let rec = null;
+    let recActive = false;   // 현재 인식 엔진이 돌고 있는지
+    let recPaused = false;   // 말하는 중이라 잠시 멈춘 상태인지
+    let oneShot = false;     // 코어/마이크 버튼으로 한 번만 듣는 모드
+
+    function buildRecognizer() {
+      if (!SR) return null;
+      const r = new SR();
+      r.lang = 'ko-KR';          // 한국어 기준 (영어 단어도 어느 정도 인식됨)
+      r.continuous = true;       // 계속 듣기
+      r.interimResults = false;  // 말이 끝난 문장만 받기
+
+      r.onresult = (e) => {
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          if (e.results[i].isFinal) handleHeard(e.results[i][0].transcript);
+        }
+      };
+
+      r.onerror = (e) => {
+        if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+          addMsg('system', '마이크 권한이 막혀 있습니다. 주소창 왼쪽 자물쇠 아이콘에서 마이크를 허용해 주세요. 앱스 스크립트 화면에서 계속 막히면 정적 페이지 방식을 사용해 주세요.');
+          wakeOn = false;
+          oneShot = false;
+          $('wakeToggle').classList.remove('on');
+          setState('error');
+        }
+      };
+
+      // 크롬은 일정 시간이 지나면 듣기를 스스로 끝내므로 자동으로 다시 시작
+      r.onend = () => {
+        recActive = false;
+        if (oneShot) {
+          oneShot = false;
+          $('micBtn').classList.remove('mic-on');
+          if (!busy) backToRest();
+        }
+        if (wakeOn && !recPaused) setTimeout(startRecognition, 300);
+      };
+      return r;
+    }
+
+    function startRecognition() {
+      if (!SR) {
+        addMsg('system', '이 브라우저는 음성 인식을 지원하지 않습니다. PC는 크롬, 안드로이드는 크롬, 아이폰은 사파리 최신 버전을 사용해 주세요.');
+        return;
+      }
+      if (!rec) rec = buildRecognizer();
+      if (recActive) return;
+      try { rec.start(); recActive = true; } catch (e) { /* 이미 실행 중이면 무시 */ }
+    }
+
+    function pauseRecognition() {
+      recPaused = true;
+      if (rec && recActive) { try { rec.abort(); } catch (e) {} }
+    }
+
+    function resumeRecognition() {
+      recPaused = false;
+      if (wakeOn) setTimeout(startRecognition, 400);
+    }
+
+    // 들은 문장 처리
+    function handleHeard(transcript) {
+      const text = transcript.trim();
+      if (!text || busy || speaking) return;
+
+      // 코어/마이크 버튼으로 바로 말한 경우: 호출어 없이 그대로 명령
+      if (oneShot) {
+        oneShot = false;
+        $('micBtn').classList.remove('mic-on');
+        if (rec && !wakeOn) { try { rec.stop(); } catch (e) {} }
+        sendCommand(text.replace(WAKE_WORDS, '').replace(/^[\s,.!?~]+/, '') || text);
+        return;
+      }
+
+      // 호출 후 명령을 기다리던 중이면 이번 문장이 명령
+      if (awaitingCommand) {
+        sendCommand(text.replace(WAKE_WORDS, '').replace(/^[\s,.!?~]+/, '') || text);
+        return;
+      }
+
+      // 상시 대기 중: 호출어가 들어 있는지 확인
+      const m = text.match(WAKE_WORDS);
+      if (!m) return;
+
+      const rest = text.slice(m.index + m[0].length).replace(/^[\s,.!?~야아]+/, '').trim();
+      if (rest.length >= 2) {
+        // "자비스, 오늘 일정 알려줘" 처럼 한 번에 말한 경우
+        chime();
+        sendCommand(rest);
+      } else {
+        // "자비스" 만 부른 경우: 명령 대기 모드로 전환
+        enterAwait('호출');
+      }
+    }
+
+    // 호출 응답: 확인음 + 8초 동안 명령 대기
+    function enterAwait(source) {
+      if (busy || speaking) return;
+      awaitingCommand = true;
+      chime();
+      setState('listening', source === '박수' ? '박수 확인, 말씀하세요' : '네, 말씀하세요');
+      clearTimeout(awaitTimer);
+      awaitTimer = setTimeout(() => {
+        awaitingCommand = false;
+        backToRest();
+      }, 8000);
+
+      // 박수로 깨운 경우 상시 대기가 꺼져 있으면 한 번만 듣기
+      if (!wakeOn) { oneShot = true; startRecognition(); }
+    }
+
+    function clearAwait() {
+      awaitingCommand = false;
+      clearTimeout(awaitTimer);
+    }
+
+    /* ==========================================================
+       13. 박수 두 번 감지 (마이크 소리 크기를 실시간 분석)
+       ========================================================== */
+    let clapStream = null, clapCtx = null, analyser = null, clapLoopId = null;
+    let noiseFloor = 0.02;      // 주변 소음 평균
+    let lastPeakAt = 0;         // 마지막 박수 시각
+    let claps = [];             // 최근 박수 시각 목록
+    let clapCooldownUntil = 0;  // 연속 오작동 방지 대기 시간
+
+    async function startClap() {
+      try {
+        clapStream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+        });
+      } catch (e) {
+        addMsg('system', '박수 감지를 위해 마이크 권한이 필요합니다. 권한을 허용한 뒤 다시 켜 주세요.');
+        return false;
+      }
+      clapCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const src = clapCtx.createMediaStreamSource(clapStream);
+      analyser = clapCtx.createAnalyser();
+      analyser.fftSize = 1024;
+      src.connect(analyser);
+      const buf = new Float32Array(analyser.fftSize);
+
+      const loop = () => {
+        analyser.getFloatTimeDomainData(buf);
+        let peak = 0, sum = 0;
+        for (let i = 0; i < buf.length; i++) {
+          const a = Math.abs(buf[i]);
+          if (a > peak) peak = a;
+          sum += buf[i] * buf[i];
+        }
+        const rms = Math.sqrt(sum / buf.length);
+        const now = performance.now();
+        micLevel = rms; // 파형 패널에 반영
+
+        // 설정 창의 막대에 현재 소리 크기 표시
+        $('meterBar').style.width = Math.min(100, (peak / settings.clapThreshold) * 100) + '%';
+
+        // 박수 판단: 순간 최대 소리가 기준보다 크고, 평소 소음보다 훨씬 크게 튀는 소리
+        const isSpike = peak > settings.clapThreshold && peak > noiseFloor * 5;
+
+        if (isSpike && now - lastPeakAt > 120 && now > clapCooldownUntil && !speaking && !busy) {
+          lastPeakAt = now;
+          claps = claps.filter(t => now - t < 900);
+          claps.push(now);
+
+          // 0.15초~0.9초 사이 간격으로 두 번이면 호출로 인정
+          if (claps.length >= 2) {
+            const gap = claps[claps.length - 1] - claps[claps.length - 2];
+            if (gap > 150) {
+              claps = [];
+              clapCooldownUntil = now + 2500;
+              enterAwait('박수');
+            }
+          }
+        } else if (!isSpike) {
+          // 조용한 구간에서만 주변 소음 평균을 천천히 갱신
+          noiseFloor = noiseFloor * 0.97 + rms * 0.03;
+        }
+        clapLoopId = requestAnimationFrame(loop);
+      };
+      loop();
+      return true;
+    }
+
+    function stopClap() {
+      if (clapLoopId) cancelAnimationFrame(clapLoopId);
+      if (clapStream) clapStream.getTracks().forEach(t => t.stop());
+      if (clapCtx) clapCtx.close();
+      clapStream = clapCtx = analyser = clapLoopId = null;
+      micLevel = 0;
+      $('meterBar').style.width = '0%';
+    }
+
+    /* ==========================================================
+       14. 화면 꺼짐 방지 (상시 대기 중 화면이 꺼지지 않게)
+       ========================================================== */
+    let wakeLock = null;
+    async function keepScreenOn(on) {
+      try {
+        if (on && 'wakeLock' in navigator && !wakeLock) wakeLock = await navigator.wakeLock.request('screen');
+        if (!on && wakeLock) { await wakeLock.release(); wakeLock = null; }
+      } catch (e) { /* 지원하지 않는 기기는 무시 */ }
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && (wakeOn || clapOn)) {
+        wakeLock = null;
+        keepScreenOn(true);
+      }
+    });
+
+    /* ==========================================================
+       15. 버튼 동작 연결
+       ========================================================== */
+
+    // 상시 대기 켜기/끄기
+    $('wakeToggle').onclick = () => {
+      wakeOn = !wakeOn;
+      $('wakeToggle').classList.toggle('on', wakeOn);
+      if (wakeOn) {
+        chime(); // 브라우저 소리 재생 허용을 위해 첫 클릭 때 소리를 한 번 낸다
+        startRecognition();
+        addMsg('system', '상시 대기를 시작했습니다. "자비스"라고 불러 주세요.');
+      } else {
+        if (rec) { try { rec.abort(); } catch (e) {} }
+        clearAwait();
+      }
+      keepScreenOn(wakeOn || clapOn);
+      backToRest();
+    };
+
+    // 박수 감지 켜기/끄기
+    $('clapToggle').onclick = async () => {
+      if (!clapOn) {
+        const ok = await startClap();
+        if (!ok) return;
+        clapOn = true;
+        chime();
+        addMsg('system', '박수 감지를 시작했습니다. 박수를 두 번 치면 응답합니다.');
+      } else {
+        stopClap();
+        clapOn = false;
+      }
+      $('clapToggle').classList.toggle('on', clapOn);
+      keepScreenOn(wakeOn || clapOn);
+      backToRest();
+    };
+
+    // 음성 응답 켜기/끄기 (회의 중에는 끄고 글로만 받기)
+    function renderVoiceToggle() {
+      $('voiceIcon').textContent = settings.voiceOn ? '🔊' : '🔇';
+      $('voiceLabel').textContent = settings.voiceOn ? '음성 켜짐' : '음성 꺼짐';
+      $('voiceToggle').classList.toggle('on', settings.voiceOn);
+      $('sysVoice').textContent = !settings.voiceOn ? '꺼짐' : (settings.voiceMode === 'gemini' ? 'Gemini 집사' : '브라우저');
+    }
+    $('voiceToggle').onclick = () => {
+      settings.voiceOn = !settings.voiceOn;
+      store.set('jarvis_voice_on', settings.voiceOn ? '1' : '0');
+      renderVoiceToggle();
+    };
+
+    // 코어 또는 마이크 버튼: 호출어 없이 한 번 말하기
+    function talkOnce() {
+      if (busy) return;
+      if (speaking) { player.pause(); speechSynthesis.cancel(); stopSpeaking(); backToRest(); return; } // 말하는 중에 누르면 멈춤
+      chime();
+      oneShot = true;
+      $('micBtn').classList.add('mic-on');
+      setState('listening', '말씀하세요');
+      if (wakeOn && rec && recActive) return; // 이미 듣고 있으면 그대로 사용
+      startRecognition();
+    }
+    $('reactor').onclick = talkOnce;
+    $('micBtn').onclick = talkOnce;
+
+    // 글로 보내기
+    $('sendBtn').onclick = () => { sendCommand(inputEl.value); inputEl.value = ''; autoGrow(); };
+    inputEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+        e.preventDefault();
+        $('sendBtn').click();
+      }
+    });
+    function autoGrow() {
+      inputEl.style.height = 'auto';
+      inputEl.style.height = Math.min(inputEl.scrollHeight, 140) + 'px';
+    }
+    inputEl.addEventListener('input', autoGrow);
+
+    // 빠른 명령 버튼 (패널 안의 모든 data-q 버튼)
+    document.querySelectorAll('[data-q]').forEach(btn => {
+      btn.onclick = () => sendCommand(btn.dataset.q);
+    });
+
+    /* ==========================================================
+       16. 설정 창
+       ========================================================== */
+    function openSettings() {
+      $('cfgUrl').value = settings.url;
+      $('cfgToken').value = settings.token;
+      $('cfgVoice').value = settings.voiceMode;
+      $('cfgClap').value = settings.clapThreshold;
+      $('clapVal').textContent = settings.clapThreshold.toFixed(2);
+      $('modalBg').classList.add('show');
+    }
+    function closeSettings() { $('modalBg').classList.remove('show'); }
+
+    $('settingsBtn').onclick = openSettings;
+    $('cfgClose').onclick = closeSettings;
+    $('cfgClap').oninput = (e) => {
+      settings.clapThreshold = parseFloat(e.target.value);
+      $('clapVal').textContent = settings.clapThreshold.toFixed(2);
+    };
+
+    $('cfgSave').onclick = () => {
+      settings.url = $('cfgUrl').value.trim();
+      settings.token = $('cfgToken').value.trim();
+      settings.voiceMode = $('cfgVoice').value;
+      store.set('jarvis_url', settings.url);
+      store.set('jarvis_token', settings.token);
+      store.set('jarvis_voice', settings.voiceMode);
+      store.set('jarvis_clap', String(settings.clapThreshold));
+      closeSettings();
+      renderVoiceToggle();
+      addMsg('system', '설정을 저장했습니다.');
+      loadDashboard();
+    };
+
+    // 연결 테스트
+    $('cfgTest').onclick = async () => {
+      const url = $('cfgUrl').value.trim();
+      const token = $('cfgToken').value.trim();
+      try {
+        const res = await fetch(url, { method: 'POST', body: JSON.stringify({ token: token, action: 'ping' }) });
+        const data = await res.json();
+        alert(data.ok ? '연결 성공: ' + data.reply : '연결 실패: ' + data.error);
+      } catch (e) {
+        alert('연결 실패: 주소 또는 배포 권한(모든 사용자)을 확인해 주세요.');
+      }
+    };
+
+    /* ==========================================================
+       17. 첫 화면 준비
+       ========================================================== */
+    renderVoiceToggle();
+    backToRest();
+    if ('speechSynthesis' in window) speechSynthesis.getVoices(); // 음성 목록 미리 불러오기
+    addMsg('jarvis', '안녕하십니까. 자비스입니다. 오늘도 업무를 보좌하겠습니다. 상시 대기를 켜시거나 코어를 눌러 말씀해 주십시오.');
+    if (!settings.token) addMsg('system', '처음 사용하시면 상단 설정에서 접속 암호를 입력해 주세요.');
+    loadDashboard();
+  </script>
+</body>
+</html>
