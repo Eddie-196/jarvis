@@ -411,6 +411,8 @@
 
     .hint { font-size: 12.5px; color: var(--muted); text-align: center; line-height: 1.7; }
     .hint b { color: var(--cyan); font-weight: 500; }
+    .hint.hint-live { color: var(--text); padding: 8px 16px; border-radius: 12px; border: 1px solid var(--teal); background: rgba(95, 242, 224, 0.08); box-shadow: 0 0 18px rgba(95, 242, 224, 0.25); }
+    .hint.hint-live b { color: var(--teal); }
 
     /* ==========================================================
        6. 오른쪽 패널 (시간 다이얼, 음성 파형, 시스템 상태, 빠른 명령)
@@ -944,7 +946,8 @@
     };
 
     // 호출어로 인식할 단어 (발음이 비슷하게 인식되는 경우까지 포함)
-    const WAKE_WORDS = /(자비스|쟈비스|자비쓰|자비즈|자빗|jarvis|javis|jervis)/i;
+    // 음성 인식이 "자비스"를 띄어 쓰거나 비슷하게 받아적는 경우까지 포함
+    const WAKE_WORDS = /(자\s?비\s?스|쟈\s?비\s?스|재\s?비\s?스|제\s?비\s?스|저\s?비\s?스|자\s?비\s?쓰|자\s?비\s?즈|자\s?뷔\s?스|자빗스?|jarvis|javis|jervis|jarves)/i;
 
     /* ==========================================================
        3. 화면 요소와 상태 값
@@ -984,6 +987,19 @@
       $('coreSub').textContent = label || t[1];
       $('waveLabel').textContent = label || t[1];
       $('consoleState').textContent = label || t[1];
+
+      // 기본 화면 가운데 안내 문구: 명령을 듣는 중이면 크게 강조
+      const hint = document.querySelector('.hint');
+      if (hint) {
+        if (!hint.dataset.orig) hint.dataset.orig = hint.innerHTML;
+        if (s === 'listening') {
+          hint.innerHTML = '<b style="font-size:16px">🎙 ' + (label || '듣고 있습니다') + '</b><br>명령을 말씀하시면 끝까지 듣고 처리하겠습니다.';
+          hint.classList.add('hint-live');
+        } else {
+          hint.innerHTML = hint.dataset.orig;
+          hint.classList.remove('hint-live');
+        }
+      }
     }
 
     function backToRest() {
@@ -1672,9 +1688,20 @@
     }
 
     function onStillSpeaking(interim) {
-      if (!capturing && (awaitingCommand || oneShot)) startCapture('');
-      if (!capturing) return;
-      showHeard((cmdBuf + ' ' + cleanCommand(interim)).trim());
+      if (busy || speaking) return;
+
+      // 기본 화면 대기 중: 말이 끝나기 전이라도 "자비스"가 들리면 바로 명령 대기 상태로
+      if (!capturing && !awaitingCommand && !oneShot) {
+        if (WAKE_WORDS.test(interim)) enterAwait('호출');
+        return;
+      }
+
+      const c = cleanCommand(interim);
+      if (!capturing) {
+        if (!c) return;          // "자비스"만 들린 상태면 명령을 계속 기다림
+        startCapture('');
+      }
+      showHeard((cmdBuf + ' ' + c).trim());
       armCmdTimer();
     }
 
@@ -1715,6 +1742,7 @@
 
       // 코어/마이크 버튼 또는 호출 직후: 이 문장부터 명령 받아쓰기 시작
       if (oneShot || awaitingCommand) {
+        if (!cleanCommand(text)) return;   // "자비스"만 말한 경우는 명령을 계속 기다림
         startCapture(text);
         return;
       }
@@ -1745,7 +1773,7 @@
       awaitTimer = setTimeout(() => {
         awaitingCommand = false;
         backToRest();
-      }, 8000);
+      }, 10000);
 
       // 박수로 깨운 경우 상시 대기가 꺼져 있으면 한 번만 듣기
       if (!wakeOn) { oneShot = true; startRecognition(); }
