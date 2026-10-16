@@ -425,6 +425,20 @@
 
     canvas.wave { width: 100%; height: 70px; display: block; }
 
+    /* ----- 세계 시계 (GLOBAL LINK) ----- */
+    .world { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .world li { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; padding-bottom: 8px; border-bottom: 1px dashed rgba(63, 208, 255, 0.15); }
+    .world li:last-child { border-bottom: none; padding-bottom: 0; }
+    .world .w-city { font-size: 13px; }
+    .world .w-city small { color: var(--muted); font-size: 11px; margin-left: 4px; }
+    .world .w-time { font-family: var(--mono); font-size: 20px; color: var(--cyan); text-shadow: 0 0 8px var(--glow); text-align: right; }
+    .world .w-status { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+    .world .w-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+    .world .on .w-dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
+    .world .lunch .w-dot { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+    .world .off .w-dot { background: var(--red); }
+    .world .w-hol { grid-column: 1 / -1; font-size: 11px; color: var(--amber); }
+
     .sys { list-style: none; font-size: 12.5px; display: flex; flex-direction: column; gap: 6px; }
     .sys li { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px dashed rgba(63, 208, 255, 0.15); padding-bottom: 5px; }
     .sys li span:first-child { color: var(--muted); }
@@ -833,6 +847,11 @@
         </section>
 
         <section class="panel">
+          <div class="panel-title">GLOBAL LINK <small>지금 연락 가능?</small></div>
+          <ul class="world" id="worldList"><li class="empty">연결 후 표시됩니다</li></ul>
+        </section>
+
+        <section class="panel">
           <div class="panel-title">VOICE SIGNAL <small id="waveLabel">대기</small></div>
           <canvas class="wave" id="wave"></canvas>
         </section>
@@ -844,6 +863,8 @@
             <li><span>음성 방식</span><span id="sysVoice">-</span></li>
             <li><span>마지막 응답 시간</span><span id="sysLatency">-</span></li>
             <li><span>데이터 갱신</span><span id="sysSync">-</span></li>
+            <li><span>자가 진단</span><span id="sysDiag">-</span></li>
+            <li><span>집중 모드</span><span id="sysFocus">꺼짐</span></li>
           </ul>
         </section>
       </aside>
@@ -1249,12 +1270,23 @@
       const t0 = performance.now();
 
       try {
-        const data = await api({
+        const payload = {
           action: 'chat',
           message: text,
           device: /Mobi/i.test(navigator.userAgent) ? 'mobile' : 'pc',
-          wantAudio: settings.voiceOn && settings.voiceMode === 'gemini'
-        });
+          wantAudio: false,      // 목소리는 글 답변을 먼저 보여준 뒤 따로 요청 (체감 속도 개선)
+          splitAudio: true
+        };
+        // 일시 오류(혼잡, 시간 초과, 연결 끊김)는 2초 뒤 한 번 자동으로 다시 시도 (자가 복구)
+        let data;
+        try {
+          data = await api(payload);
+          if (!data.ok && /429|50[0-4]|시간 초과|서버 응답을 읽지 못/.test(String(data.error))) throw new Error(data.error);
+        } catch (firstErr) {
+          setState('thinking', '일시 오류, 다시 시도 중');
+          await new Promise(r => setTimeout(r, 2000));
+          data = await api(payload);
+        }
 
         $('sysLatency').textContent = ((performance.now() - t0) / 1000).toFixed(1) + '초';
 
@@ -1274,10 +1306,21 @@
           showError('집사 목소리 생성 실패', ex[1] + ' 이번 답변은 브라우저 기본 음성으로 대신 읽습니다.', ex[2], data.audioError, 'warn');
         }
 
-        // 음성 응답 (Gemini 음성 실패 시 브라우저 음성으로 대체)
+        // 음성 응답: 글 답변은 이미 보여줬고, 목소리는 따로 받아서 재생 (실패하면 브라우저 음성으로 대체)
         if (settings.voiceOn) {
-          if (data.audio) await playGeminiAudio(data.audio);
-          else await speakBrowser(data.speech || data.reply);
+          const speech = data.speech || data.reply;
+          if (settings.voiceMode === 'gemini') {
+            setState('thinking', '목소리 준비 중');
+            let audio = null;
+            try {
+              const t = await api({ action: 'tts', text: speech });
+              if (t.ok && t.audio) audio = t.audio;
+            } catch (e) { }
+            if (audio) await playGeminiAudio(audio);
+            else await speakBrowser(speech);
+          } else {
+            await speakBrowser(speech);
+          }
         }
 
         // 할 일 등록 등으로 바뀐 내용이 패널에 반영되도록 갱신
@@ -1319,6 +1362,46 @@
         showError('패널 데이터 갱신 실패', '자비스 서버에 접속하지 못했습니다.', '설정의 서버 주소와 인터넷 연결을 확인해 주세요.', e.message, 'warn');
       }
     }
+
+    /* ----- 세계 시계: 현지 시각과 근무 상태 ----- */
+    let worldData = [];
+    function localParts(tz) {
+      const f = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false });
+      const p = {};
+      f.formatToParts(new Date()).forEach(x => { p[x.type] = x.value; });
+      const h = Number(p.hour) % 24;
+      return { time: String(h).padStart(2, '0') + ':' + p.minute, h: h, weekend: p.weekday === 'Sat' || p.weekday === 'Sun' };
+    }
+    function renderWorld() {
+      const ul = $('worldList');
+      if (!worldData.length) return;
+      ul.innerHTML = '';
+      worldData.forEach(w => {
+        const t = localParts(w.tz);
+        let code, status;
+        if (/공휴일/.test(w.status)) { code = 'off'; status = w.status; }
+        else if (t.weekend) { code = 'off'; status = '주말'; }
+        else if (t.h >= 9 && t.h < 18) { code = t.h === 12 ? 'lunch' : 'on'; status = t.h === 12 ? '점심시간' : '근무 중 · 지금 연락 가능'; }
+        else { code = 'off'; status = '근무 시간 외 · 메일 권장'; }
+        const li = document.createElement('li');
+        li.className = code;
+        const city = document.createElement('span'); city.className = 'w-city'; city.textContent = w.city;
+        const small = document.createElement('small'); small.textContent = w.clients; city.appendChild(small);
+        const time = document.createElement('span'); time.className = 'w-time'; time.textContent = t.time;
+        const st = document.createElement('span'); st.className = 'w-status';
+        const dot = document.createElement('i'); dot.className = 'w-dot';
+        const stx = document.createElement('span'); stx.textContent = status;
+        st.append(dot, stx);
+        li.append(city, time, st);
+        if (w.next_holidays && w.next_holidays.length) {
+          const h = document.createElement('span'); h.className = 'w-hol';
+          h.textContent = '공휴일 예정: ' + w.next_holidays.slice(0, 2).join(', ');
+          li.appendChild(h);
+        }
+        ul.appendChild(li);
+      });
+    }
+    setInterval(renderWorld, 30000);
 
     function renderDashboard(d) {
       // 오늘 일정
@@ -1379,6 +1462,16 @@
       $('mailNum').textContent = unread > 99 ? '99+' : unread;
       $('mailUnread').textContent = unread + '통';
       $('mailNaver').textContent = (d.naverUnread || 0) + '통';
+
+      // 세계 시계 (서버의 공휴일 정보 + 화면에서 매초 시각 계산)
+      if (d.world) { worldData = d.world; renderWorld(); }
+      // 자가 진단 결과
+      if (d.diag) {
+        $('sysDiag').textContent = d.diag.status + (d.diag.fixed ? ' (자동복구 ' + d.diag.fixed + ')' : '');
+        $('sysDiag').className = d.diag.status === '정상' ? 'ok' : 'bad';
+      } else { $('sysDiag').textContent = '오늘 밤 첫 점검'; }
+      $('sysFocus').textContent = d.focus ? '켜짐 (알림 모으는 중)' : '꺼짐';
+      $('sysFocus').className = d.focus ? 'ok' : '';
     }
 
     // 5분마다 자동 갱신
@@ -1427,7 +1520,12 @@
 
     // 브라우저 기본 음성 (한국어는 한국어 음성, 영어는 영국식 남성 음성 우선)
     function speakBrowser(text) {
-      return new Promise((resolve) => {
+      return new Promise((resolveRaw) => {
+        // 브라우저 음성이 끝 신호를 안 보내고 멈추는 경우를 대비한 안전장치 (글자 수에 비례한 최대 시간)
+        let finished = false;
+        const resolve = () => { if (finished) return; finished = true; resolveRaw(); };
+        setTimeout(() => { if (!finished) { try { speechSynthesis.cancel(); } catch (e) {} stopSpeaking(); resolve(); } },
+          Math.max(6000, String(text).length * 150));
         if (!('speechSynthesis' in window)) return resolve();
         const u = new SpeechSynthesisUtterance(text);
         const isKorean = /[가-힣]/.test(text);
