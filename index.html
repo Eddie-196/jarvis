@@ -518,6 +518,26 @@
     }
     .open-console:hover { box-shadow: 0 0 22px var(--glow); }
 
+    /* 답변 자막 */
+    .reply-cap {
+      display: none;
+      width: min(100%, 560px);
+      margin-top: 6px;
+      padding: 12px 16px;
+      border-radius: 14px;
+      border: 1px solid var(--line-strong);
+      background: rgba(4, 22, 44, 0.75);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 0 18px rgba(63, 208, 255, 0.18);
+      text-align: left;
+    }
+    .reply-cap.show { display: block; animation: fadeIn .25s ease; }
+    .reply-cap .cap-who { font-family: var(--tech); font-size: 9.5px; letter-spacing: 2px; color: var(--cyan); }
+    .reply-cap p { margin: 6px 0 8px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+    .cap-more { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 8px; padding: 3px 10px; font-size: 11.5px; cursor: pointer; font-family: inherit; }
+    .cap-more:hover { color: var(--text); border-color: var(--cyan); }
+
     .msg {
       max-width: 86%;
       padding: 11px 14px;
@@ -821,7 +841,13 @@
           언제든 <b>"자비스"</b>라고 부르세요. 상시 대기는 항상 켜져 있습니다.<br>
           코어를 누르면 호출어 없이 바로 말할 수 있습니다.
         </p>
-        <button class="open-console" id="openConsoleBtn">💬 명령 창 열기</button>
+        <!-- 답변 자막: 명령 창을 열지 않아도 마지막 답변을 잠깐 보여줌 -->
+        <div class="reply-cap" id="replyCap">
+          <span class="cap-who">J.A.R.V.I.S.</span>
+          <p id="capText"></p>
+          <button class="cap-more" id="capMore">전체 보기</button>
+        </div>
+        <button class="open-console" id="openConsoleBtn">💬 명령 창 열기 (글로 입력)</button>
       </section>
 
       <!-- 오른쪽: 시간 다이얼, 음성 파형, 시스템, 빠른 명령 -->
@@ -1225,6 +1251,26 @@
       }
     }
 
+    /* ----- 답변 자막: 짧게 보여주고 25초 뒤 자동으로 사라짐 ----- */
+    let capTimer = null;
+    function showCaption(text) {
+      const t = String(text || '').trim();
+      if (!t) return;
+      // 명령 창이 이미 열려 있으면(글로 입력 중) 자막은 생략
+      if ($('consoleBg').classList.contains('show')) return;
+      const short = t.length > 160 ? t.slice(0, 160) + '…' : t;
+      $('capText').textContent = short;
+      $('capMore').style.display = t.length > 160 ? '' : 'none';
+      $('replyCap').classList.add('show');
+      clearTimeout(capTimer);
+      capTimer = setTimeout(hideCaption, 25000);
+    }
+    function hideCaption() {
+      clearTimeout(capTimer);
+      const c = $('replyCap');
+      if (c) c.classList.remove('show');
+    }
+
     /* ----- 명령 창 열기·닫기 ----- */
     function openConsole(focusInput) {
       $('consoleBg').classList.add('show');
@@ -1251,7 +1297,6 @@
       if (busy) {
         // 처리 중이면 버리지 않고 순서대로 실행
         cmdQueue.push(text);
-        openConsole(false);
         addMsg('system', '앞 명령을 처리 중입니다. 끝나는 대로 "' + text + '"를 실행하겠습니다.');
         return;
       }
@@ -1264,7 +1309,8 @@
 
       busy = true;
       clearAwait();
-      openConsole(false); // 명령하면 명령 창을 띄워 진행 상황과 답변을 보여준다
+      // 명령 창은 자동으로 열지 않음 (글로 입력하고 싶을 때만 직접 열기). 답변은 목소리와 화면 아래 자막으로 전달
+      hideCaption();
       addMsg('user', text);
       setState('thinking');
       const t0 = performance.now();
@@ -1298,7 +1344,8 @@
         }
 
         setConn(true, '정상');
-        addMsg('jarvis', data.reply);
+        addMsg('jarvis', data.reply);   // 명령 창 기록에는 남겨 두고
+        showCaption(data.reply);         // 화면에는 자막으로 표시
 
         // 글 답변은 왔지만 Gemini 목소리 생성이 실패한 경우 (브라우저 음성으로 대신 읽음)
         if (data.audioError && settings.voiceOn) {
@@ -1995,7 +2042,7 @@
     function talkOnce() {
       if (busy) return;
       if (speaking) { player.pause(); speechSynthesis.cancel(); stopSpeaking(); backToRest(); return; } // 말하는 중에 누르면 멈춤
-      if (!precheckSpeech()) { openConsole(true); return; }   // 마이크를 못 쓰면 이유를 보여주고 글 입력 창을 연다
+      if (!precheckSpeech()) return;   // 마이크를 못 쓰면 오류 안내 창으로 이유만 알림
       closeError();
       chime();
       oneShot = true;
@@ -2039,6 +2086,7 @@
     $('consoleBtn').onclick = () => openConsole(true);
     $('openConsoleBtn').onclick = () => openConsole(true);
     $('consoleClose').onclick = closeConsole;
+    $('capMore').onclick = () => { hideCaption(); openConsole(false); };
     // 창 바깥 어두운 영역을 누르면 닫힘
     $('consoleBg').addEventListener('click', (e) => { if (e.target === $('consoleBg')) closeConsole(); });
     document.addEventListener('keydown', (e) => {
