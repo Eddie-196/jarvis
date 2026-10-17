@@ -674,6 +674,98 @@
       .console { height: 88vh; padding: 12px; }
       .console-bg { padding: 8px; }
     }
+
+    /* ==========================================================
+       11. 3차 화면 기능
+           부팅 장면, 데이터 카드, 고객사 레이더, 진행 보드,
+           상황별 색 테마, 야간 밝기, 미니 모드, 휴대폰 하단 바
+       ========================================================== */
+
+    /* ----- 부팅 장면 (처음 열 때 2~3초, 누르면 건너뜀) ----- */
+    .boot { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 18px;
+      background: radial-gradient(ellipse at center, #06213f 0%, #020a18 70%); transition: opacity .6s ease; cursor: pointer; }
+    .boot.hide { opacity: 0; pointer-events: none; }
+    .boot-ring { width: 150px; height: 150px; border-radius: 50%; border: 2px solid var(--cyan); box-shadow: 0 0 30px var(--glow), inset 0 0 30px var(--glow);
+      position: relative; animation: bootSpin 1.6s linear infinite; border-top-color: transparent; }
+    .boot-ring::after { content: ''; position: absolute; inset: 22px; border-radius: 50%; border: 1px dashed var(--teal); animation: bootSpin 3s linear infinite reverse; }
+    .boot-title { font-family: var(--tech); letter-spacing: 6px; color: var(--cyan); font-size: 20px; text-shadow: 0 0 12px var(--glow); }
+    .boot-lines { font-family: var(--mono); font-size: 12.5px; color: var(--teal); min-height: 110px; width: min(90vw, 420px); line-height: 1.7; }
+    .boot-lines div { opacity: 0; animation: fadeIn .3s ease forwards; }
+    .boot-lines .ok { color: var(--green); }
+    @keyframes bootSpin { to { transform: rotate(360deg); } }
+
+    /* ----- 목소리 반응형 코어: --lvl(0~1) 값에 따라 빛과 크기가 커짐 ----- */
+    .reactor { --lvl: 0; }
+    .reactor svg { transform: scale(calc(1 + var(--lvl) * 0.045)); transition: transform .08s linear; }
+    .reactor .core-glow { opacity: calc(0.75 + var(--lvl) * 0.25); }
+
+    /* ----- 데이터 홀로그램 카드 (답변에 숫자가 있으면 코어 아래에 떠오름) ----- */
+    .cards { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; width: min(100%, 620px); }
+    .holo { flex: 1 1 240px; max-width: 300px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line-strong);
+      background: linear-gradient(160deg, rgba(63, 208, 255, 0.14), rgba(4, 22, 44, 0.7)); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 0 22px rgba(63, 208, 255, 0.22); animation: holoIn .45s cubic-bezier(.2, .9, .3, 1.2); position: relative; overflow: hidden; }
+    .holo::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 3px); pointer-events: none; }
+    .holo h4 { font-family: var(--tech); font-size: 10px; letter-spacing: 2px; color: var(--cyan); margin-bottom: 8px; font-weight: 500; }
+    .holo .row { display: grid; grid-template-columns: 78px 1fr auto; gap: 8px; align-items: center; font-size: 12px; margin: 5px 0; }
+    .holo .row span:first-child { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .holo .bar-h { height: 6px; border-radius: 4px; background: linear-gradient(90deg, var(--cyan), var(--teal)); box-shadow: 0 0 8px var(--glow); min-width: 2px; }
+    .holo .bar-h.neg { background: linear-gradient(90deg, var(--amber), var(--red)); }
+    .holo .v { font-family: var(--mono); font-size: 12px; }
+    .holo .x { position: absolute; top: 6px; right: 8px; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 12px; }
+    @keyframes holoIn { from { opacity: 0; transform: translateY(14px) scale(.96); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
+
+    /* ----- 고객사 레이더 맵 ----- */
+    .radar-map { width: 100%; aspect-ratio: 1.6; display: block; }
+    .radar-map .blip { animation: blipPulse 2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    .radar-map .sweep { transform-origin: 160px 100px; animation: spin 6s linear infinite; }
+    @keyframes blipPulse { 50% { transform: scale(1.6); opacity: .5; } }
+    .radar-legend { display: flex; gap: 12px; font-size: 11px; color: var(--muted); margin-top: 4px; flex-wrap: wrap; }
+    .radar-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+
+    /* ----- 샘플·개발 진행 보드 + 선적 ----- */
+    .kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .kcol { background: rgba(0, 0, 0, 0.18); border: 1px solid var(--line); border-radius: 10px; padding: 6px; min-height: 64px; }
+    .kcol h5 { font-size: 10.5px; color: var(--muted); font-weight: 500; display: flex; justify-content: space-between; margin-bottom: 4px; }
+    .kcol h5 b { color: var(--cyan); font-family: var(--mono); }
+    .kcard { font-size: 11px; line-height: 1.35; padding: 4px 6px; border-radius: 6px; background: rgba(63, 208, 255, 0.1); border-left: 2px solid var(--cyan); margin-top: 4px; word-break: break-all; }
+    .kcard.late { border-left-color: var(--red); background: rgba(255, 100, 112, 0.12); }
+    .kcard small { display: block; color: var(--muted); font-size: 10px; }
+    .ship-list { list-style: none; margin-top: 8px; display: flex; flex-direction: column; gap: 5px; font-size: 12px; }
+    .ship-list li { display: flex; justify-content: space-between; gap: 8px; }
+    .ship-list .eta { font-family: var(--mono); color: var(--teal); }
+    .ship-list .soon .eta { color: var(--amber); }
+
+    /* ----- 상황별 색 테마: 집중 모드(보라), 경고(빨강) ----- */
+    body[data-theme="focus"] { --cyan: #b48cff; --teal: #d6b8ff; --glow: rgba(180, 140, 255, 0.45); --line: rgba(180, 140, 255, 0.3); --line-strong: rgba(200, 170, 255, 0.65); }
+    body[data-theme="alert"] { --cyan: #ff8a7a; --teal: #ffc2a8; --glow: rgba(255, 110, 100, 0.45); --line: rgba(255, 120, 110, 0.3); --line-strong: rgba(255, 140, 130, 0.65); }
+    .theme-tag { font-family: var(--tech); font-size: 9.5px; letter-spacing: 2px; padding: 3px 8px; border-radius: 8px; border: 1px solid var(--line-strong); color: var(--cyan); display: none; }
+    body[data-theme="focus"] .theme-tag, body[data-theme="alert"] .theme-tag { display: inline-block; }
+
+    /* ----- 시간대별 자동 밝기 (밤 10시~아침 6시 어둡게) ----- */
+    body.night .app { filter: brightness(.72) saturate(.85); }
+    body.night .reactor { filter: brightness(.9); }
+
+    /* ----- 미니 모드: 코어와 자막만 작게 ----- */
+    body.mini .col, body.mini .hint, body.mini .open-console, body.mini footer { display: none !important; }
+    body.mini .hud { grid-template-columns: 1fr; grid-template-areas: "center"; }
+    body.mini .reactor { width: min(100%, 230px) !important; }
+    body.mini .topbar .logo span { display: none; }
+
+    /* ----- 휴대폰 하단 바 (휴대폰에서만 보임) ----- */
+    .mobile-bar { display: none; }
+    @media (max-width: 640px) {
+      .col.right .panel.pc-only { display: none; }      /* 휴대폰에서는 시계·파형 패널 숨김 */
+      .ctrls .ctrl.pc-only { display: none; }
+      .mobile-bar { display: flex; position: fixed; left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 30; gap: 10px;
+        padding: 8px; border-radius: 20px; border: 1px solid var(--line-strong); background: rgba(4, 22, 44, 0.82);
+        backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 0 20px rgba(63, 208, 255, 0.2); }
+      .mobile-bar button { flex: 1; border: 1px solid var(--line); background: rgba(63, 208, 255, 0.08); color: var(--text); border-radius: 14px; padding: 12px 6px; font-size: 14px; font-family: inherit; }
+      .mobile-bar button.big { flex: 1.6; background: linear-gradient(160deg, rgba(63, 208, 255, 0.35), rgba(95, 242, 224, 0.18)); border-color: var(--cyan); font-weight: 500; }
+      footer { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+      .open-console { display: none; }                  /* 휴대폰은 하단 바의 입력 버튼 사용 */
+      .kanban { grid-template-columns: repeat(2, 1fr); }
+      .cards { width: 100%; }
+    }
   </style>
 </head>
 <body data-state="idle">
@@ -687,10 +779,12 @@
         <button class="ctrl" id="wakeToggle"><span class="ring-btn">🎙</span>상시 대기</button>
         <button class="ctrl on" id="voiceToggle"><span class="ring-btn" id="voiceIcon">🔊</span><span id="voiceLabel">음성 켜짐</span></button>
         <button class="ctrl" id="consoleBtn"><span class="ring-btn">💬</span>명령 창</button>
+        <button class="ctrl pc-only" id="miniBtn" title="미니 모드 (키보드 M)"><span class="ring-btn">▣</span>미니</button>
         <button class="ctrl" id="settingsBtn"><span class="ring-btn">⚙</span>설정</button>
       </div>
 
       <div class="top-right">
+        <span class="theme-tag" id="themeTag"></span>
         <div class="status" id="status" data-state="idle" title="오류일 때 누르면 원인을 다시 볼 수 있습니다"><span class="dot"></span><span id="statusText">대기 꺼짐</span></div>
         <div class="clock" id="clock">00:00</div>
 
@@ -754,6 +848,13 @@
               <span style="font-size:11px">게이지 최대 50통 기준</span>
             </div>
           </div>
+        </section>
+
+        <!-- 샘플·개발 진행 보드 + 선적 추적 (정보업무.gs) -->
+        <section class="panel">
+          <div class="panel-title">PIPELINE <small>샘플 진행 · 선적</small></div>
+          <div class="kanban" id="kanban"><div class="kcol"><h5>연결 후 표시됩니다</h5></div></div>
+          <ul class="ship-list" id="shipList"></ul>
         </section>
       </aside>
 
@@ -847,12 +948,14 @@
           <p id="capText"></p>
           <button class="cap-more" id="capMore">전체 보기</button>
         </div>
+        <!-- 데이터 홀로그램 카드 (답변에 숫자가 있으면 표시) -->
+        <div class="cards" id="cards"></div>
         <button class="open-console" id="openConsoleBtn">💬 명령 창 열기 (글로 입력)</button>
       </section>
 
       <!-- 오른쪽: 시간 다이얼, 음성 파형, 시스템, 빠른 명령 -->
       <aside class="col right">
-        <section class="panel">
+        <section class="panel pc-only">
           <div class="panel-title">CHRONO <small>KST</small></div>
           <div class="dial-wrap">
             <svg class="dial" viewBox="0 0 120 120" id="dial">
@@ -877,7 +980,14 @@
           <ul class="world" id="worldList"><li class="empty">연결 후 표시됩니다</li></ul>
         </section>
 
+        <!-- 고객사 레이더 맵: 서울 기준 방향·거리, 점 색 = 지금 연락 가능 여부 -->
         <section class="panel">
+          <div class="panel-title">CLIENT RADAR <small>서울 기준</small></div>
+          <svg class="radar-map" id="radarMap" viewBox="0 0 320 200"></svg>
+          <div class="radar-legend"><span><i style="background:#4fffb0"></i>근무 중</span><span><i style="background:#ffb547"></i>점심</span><span><i style="background:#7fa6c4"></i>근무 외·휴일</span></div>
+        </section>
+
+        <section class="panel pc-only">
           <div class="panel-title">VOICE SIGNAL <small id="waveLabel">대기</small></div>
           <canvas class="wave" id="wave"></canvas>
         </section>
@@ -891,6 +1001,7 @@
             <li><span>데이터 갱신</span><span id="sysSync">-</span></li>
             <li><span>자가 진단</span><span id="sysDiag">-</span></li>
             <li><span>집중 모드</span><span id="sysFocus">꺼짐</span></li>
+            <li><span>짧은 대답 모드</span><span id="sysShort">-</span></li>
           </ul>
         </section>
       </aside>
@@ -941,6 +1052,31 @@
         </select>
       </div>
 
+      <div class="field">
+        <label>호출 민감도 ("자비스"를 얼마나 쉽게 알아들을지)</label>
+        <select id="cfgWake">
+          <option value="low">낮음: 문장 맨 앞에서 또렷하게 "자비스"라고 할 때만</option>
+          <option value="mid">보통 (권장): 문장 맨 앞의 "자비스"에 바로 반응</option>
+          <option value="high">높음: 비슷한 발음, 문장 중간까지 반응 (오작동 많음)</option>
+        </select>
+        <small>다른 대화나 TV 소리에 반응하면 낮음, 불러도 반응이 없으면 높음으로 바꿔 보세요.</small>
+      </div>
+
+      <div class="field">
+        <label>효과음 (부팅·확인·경고·카드 소리)</label>
+        <select id="cfgSfx"><option value="1">켜기</option><option value="0">끄기</option></select>
+      </div>
+
+      <div class="field">
+        <label>야간 밝기 (밤 10시~아침 6시 화면 어둡게)</label>
+        <select id="cfgNight"><option value="auto">자동</option><option value="off">사용 안 함</option></select>
+      </div>
+
+      <div class="field">
+        <label>짧은 대답 모드 (모든 기기 공통, 1~2문장으로 답변)</label>
+        <select id="cfgShort"><option value="0">끄기</option><option value="1">켜기</option></select>
+      </div>
+
       <div class="modal-actions">
         <button class="btn" id="cfgTest">연결 테스트</button>
         <button class="btn" id="cfgClose">닫기</button>
@@ -948,6 +1084,20 @@
       </div>
     </div>
   </div>
+
+  <!-- ===== 부팅 장면 (처음 열 때만, 누르면 건너뜀) ===== -->
+  <div class="boot" id="boot">
+    <div class="boot-ring"></div>
+    <div class="boot-title">J.A.R.V.I.S.</div>
+    <div class="boot-lines" id="bootLines"></div>
+  </div>
+
+  <!-- ===== 휴대폰 하단 바 ===== -->
+  <nav class="mobile-bar" id="mobileBar">
+    <button id="mbConsole">💬 입력</button>
+    <button class="big" id="mbTalk">🎙 말하기</button>
+    <button id="mbMini">▣ 미니</button>
+  </nav>
 
   <footer>© 2026 (Eddie). All Rights Rights.</footer>
 
@@ -988,6 +1138,7 @@
       url: injected.indexOf('https://') === 0 ? injected : (store.get('jarvis_url', '') || DEFAULT_URL),
       token: store.get('jarvis_token', ''),
       voiceMode: store.get('jarvis_voice', 'gemini'),
+      wakeSense: store.get('jarvis_wake_sense', 'mid'),   // 호출 민감도: low(확실할 때만) / mid(권장) / high(잘 못 알아들을 때)
       voiceOn: store.get('jarvis_voice_on', '1') === '1',
       wakeAlways: store.get('jarvis_wake', '1') === '1'   // 상시 대기 유지 (기본 켜짐)
     };
@@ -1650,7 +1801,7 @@
         let interim = '';
         for (let i = e.resultIndex; i < e.results.length; i++) {
           const t = e.results[i][0].transcript;
-          if (e.results[i].isFinal) handleHeard(t);
+          if (e.results[i].isFinal) handleHeard(t, e.results[i][0].confidence);
           else interim += t;
         }
         // 아직 말하는 중이면 명령 마감 시간을 뒤로 미룸
@@ -1815,6 +1966,24 @@
     let cmdBuf = '';           // 지금까지 들은 명령
     let cmdTimer = null;
 
+    /* ----- 호출어 판정 (민감도에 따라 기준이 다름) -----
+       low : 말이 끝난 뒤, 문장 맨 앞의 "자비스"만 (인식 확신도 50% 이상)
+       mid : 문장 맨 앞의 "자비스"면 말하는 중에도 바로 반응
+       high: 비슷한 발음, 문장 중간까지 반응 (이전 방식) */
+    const WAKE_EXACT = /^[\s,.!?~]*(자비스|jarvis)/i;
+    function matchWake(text, isFinal, conf) {
+      const t = String(text || '');
+      const level = settings.wakeSense || 'mid';
+      if (level === 'high') return t.match(WAKE_WORDS);
+      if (level === 'low') {
+        if (!isFinal) return null;
+        if (conf && conf < 0.5) return null;
+      }
+      const m = t.match(WAKE_EXACT);
+      if (!m) return null;
+      return { index: m.index + m[0].length - m[1].length, 0: m[1], length: m[1].length };
+    }
+
     function cleanCommand(t) {
       return t.replace(WAKE_WORDS, '').replace(/^[\s,.!?~야아]+/, '').replace(/\s+/g, ' ').trim();
     }
@@ -1837,7 +2006,7 @@
 
       // 기본 화면 대기 중: 말이 끝나기 전이라도 "자비스"가 들리면 바로 명령 대기 상태로
       if (!capturing && !awaitingCommand && !oneShot) {
-        if (WAKE_WORDS.test(interim)) enterAwait('호출');
+        if (matchWake(interim, false)) enterAwait('호출');
         return;
       }
 
@@ -1872,7 +2041,7 @@
     }
 
     // 확정된 문장 처리
-    function handleHeard(transcript) {
+    function handleHeard(transcript, conf) {
       const text = transcript.trim();
       if (!text || speaking) return;
 
@@ -1893,7 +2062,7 @@
       }
 
       // 상시 대기 중: 호출어가 들어 있는지 확인
-      const m = text.match(WAKE_WORDS);
+      const m = matchWake(text, true, conf);
       if (!m) return;
 
       const rest = text.slice(m.index + m[0].length).replace(/^[\s,.!?~야아]+/, '').trim();
@@ -2105,6 +2274,7 @@
       $('cfgUrl').value = settings.url;
       $('cfgToken').value = settings.token;
       $('cfgVoice').value = settings.voiceMode;
+      $('cfgWake').value = settings.wakeSense;
       $('modalBg').classList.add('show');
     }
     function closeSettings() { $('modalBg').classList.remove('show'); }
@@ -2116,9 +2286,11 @@
       settings.url = $('cfgUrl').value.trim();
       settings.token = $('cfgToken').value.trim();
       settings.voiceMode = $('cfgVoice').value;
+      settings.wakeSense = $('cfgWake').value;
       store.set('jarvis_url', settings.url);
       store.set('jarvis_token', settings.token);
       store.set('jarvis_voice', settings.voiceMode);
+      store.set('jarvis_wake_sense', settings.wakeSense);
       closeSettings();
       renderVoiceToggle();
       addMsg('system', '설정을 저장했습니다. 서버 연결을 확인합니다...');
@@ -2194,5 +2366,313 @@
         '음성 기능은 https://eddie-196.github.io/jarvis/ 에서 사용해 주세요.', '', 'warn');
     }
   </script>
+  <script>
+    /* ==========================================================
+       18. 3차 화면 기능
+           부팅 장면, 목소리 반응형 코어, 데이터 카드, 고객사 레이더,
+           진행 보드, 색 테마, 야간 밝기, 미니 모드, 휴대폰 바, 효과음, 짧은 대답 모드
+       ========================================================== */
+    const fx3 = {
+      sfx: store.get('jarvis_sfx', '1') === '1',       // 효과음 켜짐 여부
+      night: store.get('jarvis_night', 'auto'),       // 야간 밝기: auto | off
+      mini: store.get('jarvis_mini', '0') === '1',      // 미니 모드
+      shortMode: false                                  // 짧은 대답 모드 (서버 값)
+    };
+
+    /* ----- 효과음: 짧은 전자음 (파일 없이 브라우저에서 바로 만듦) ----- */
+    function sfx(kind) {
+      if (!fx3.sfx) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const t = audioCtx.currentTime;
+        const notes = {
+          boot: [[440, 0], [660, 0.09], [990, 0.18]],    // 올라가는 3음
+          done: [[1320, 0], [1760, 0.07]],               // 짧은 확인음
+          error: [[220, 0], [180, 0.12]],                // 낮은 경고음
+          card: [[1980, 0]]                              // 카드가 떠오를 때 작은 소리
+        }[kind] || [];
+        notes.forEach(([f, d]) => {
+          const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+          o.type = kind === 'error' ? 'square' : 'sine';
+          o.frequency.setValueAtTime(f, t + d);
+          g.gain.setValueAtTime(kind === 'error' ? 0.05 : 0.08, t + d);
+          g.gain.exponentialRampToValueAtTime(0.001, t + d + 0.16);
+          o.connect(g).connect(audioCtx.destination);
+          o.start(t + d); o.stop(t + d + 0.17);
+        });
+      } catch (e) { /* 소리 장치 문제는 무시 */ }
+    }
+
+    /* ----- 시간대별 인사 ----- */
+    function greetingText() {
+      const h = new Date().getHours();
+      return h < 5 ? '늦은 시간까지 수고하십니다' : h < 11 ? '좋은 아침입니다' : h < 14 ? '점심은 드셨습니까' : h < 18 ? '오후도 순조롭길 바랍니다' : h < 22 ? '좋은 저녁입니다' : '오늘도 고생 많으셨습니다';
+    }
+
+    /* ----- 부팅 장면: 이 탭에서 처음 열 때만 (박수로 열린 경우 빠르게) ----- */
+    (function bootSequence() {
+      const boot = $('boot');
+      let seen = false;
+      try { seen = sessionStorage.getItem('jarvis_booted') === '1'; sessionStorage.setItem('jarvis_booted', '1'); } catch (e) { }
+      const fast = /[?&]wake=1/.test(location.search);
+      if (seen) { boot.classList.add('hide'); return; }
+      const lines = [
+        '> 시스템 초기화 ............ <span class="ok">OK</span>',
+        '> 음성 인식 모듈 ........... <span class="ok">OK</span>',
+        '> 기억 저장소 연결 ......... <span class="ok">OK</span>',
+        '> 고객사 레이더 동기화 ..... <span class="ok">OK</span>',
+        '> ' + greetingText() + ', Eddie 님.'
+      ];
+      const box = $('bootLines');
+      const step = fast ? 120 : 380;
+      lines.forEach((l, i) => setTimeout(() => { const d = document.createElement('div'); d.innerHTML = l; box.appendChild(d); }, 200 + i * step));
+      const end = () => { boot.classList.add('hide'); setTimeout(() => boot.remove(), 700); };
+      setTimeout(() => { sfx('boot'); }, 150);
+      setTimeout(end, 400 + lines.length * step + (fast ? 100 : 500));
+      boot.addEventListener('click', end);
+    })();
+
+    /* ----- 목소리 반응형 코어: 자비스 목소리 크기에 맞춰 코어가 커지고 밝아짐 ----- */
+    let analyser = null, anaBuf = null;
+    function hookAnalyser() {
+      if (analyser) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state !== 'running') return;   // 소리 장치가 아직 허용 전이면 연결하지 않음 (연결하면 소리가 안 날 수 있음)
+        const src = audioCtx.createMediaElementSource(player);
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 512;
+        anaBuf = new Uint8Array(analyser.fftSize);
+        src.connect(analyser);
+        analyser.connect(audioCtx.destination);
+      } catch (e) { analyser = null; }
+    }
+    player.addEventListener('play', hookAnalyser);
+    let lvl = 0;
+    (function coreLoop() {
+      let target = 0;
+      if (state === 'speaking') {
+        if (analyser && !player.paused) {
+          analyser.getByteTimeDomainData(anaBuf);
+          let sum = 0;
+          for (let i = 0; i < anaBuf.length; i++) { const v = (anaBuf[i] - 128) / 128; sum += v * v; }
+          target = Math.min(1, Math.sqrt(sum / anaBuf.length) * 5);
+        } else {
+          target = 0.35 + 0.25 * Math.sin(performance.now() / 90);   // 브라우저 음성은 크기를 알 수 없어 리듬만 표현
+        }
+      } else if (state === 'listening') {
+        target = Math.min(1, micLevel * 8);
+      }
+      lvl += (target - lvl) * 0.35;
+      $('reactor').style.setProperty('--lvl', lvl.toFixed(3));
+      requestAnimationFrame(coreLoop);
+    })();
+
+    /* ----- 데이터 홀로그램 카드 ----- */
+    let cardTimer = null;
+    function showCards(cards) {
+      const box = $('cards');
+      box.innerHTML = '';
+      (cards || []).slice(0, 3).forEach(c => {
+        const el = document.createElement('div');
+        el.className = 'holo';
+        const h = document.createElement('h4'); h.textContent = c.title || 'DATA';
+        const x = document.createElement('button'); x.className = 'x'; x.textContent = '✕'; x.onclick = () => el.remove();
+        el.append(h, x);
+        const items = c.items || [];
+        const max = Math.max(1, ...items.map(i => Math.abs(Number(i.value) || 0)));
+        items.forEach(i => {
+          const v = Number(i.value) || 0;
+          const row = document.createElement('div'); row.className = 'row';
+          const a = document.createElement('span'); a.textContent = i.label; a.title = i.label;
+          const bar = document.createElement('div'); bar.className = 'bar-h' + (v < 0 ? ' neg' : '');
+          bar.style.width = Math.max(2, Math.abs(v) / max * 100) + '%';
+          const b = document.createElement('span'); b.className = 'v';
+          b.textContent = v.toLocaleString('ko-KR') + (i.unit ? ' ' + i.unit : '');
+          row.append(a, bar, b);
+          el.appendChild(row);
+        });
+        box.appendChild(el);
+      });
+      if (cards && cards.length) sfx('card');
+      clearTimeout(cardTimer);
+      cardTimer = setTimeout(() => { box.innerHTML = ''; }, 45000);
+    }
+
+    /* ----- 서버 요청 감싸기: 답변에 카드가 있으면 띄우고, 성공하면 확인음 ----- */
+    const _api3 = api;
+    api = async function (payload) {
+      const r = await _api3(payload);
+      if (payload && payload.action === 'chat' && r && r.ok) {
+        if (r.cards) showCards(r.cards);
+        if (!payload.silent) sfx('done');
+      }
+      return r;
+    };
+
+    /* ----- 오류가 나면 경고음 + 잠시 빨간 테마 ----- */
+    const _showError3 = showError;
+    let alertTimer = null;
+    showError = function (title, cause, fix, detail, level) {
+      _showError3(title, cause, fix, detail, level);
+      if ((level || 'error') === 'error') {
+        sfx('error');
+        setTheme('alert');
+        clearTimeout(alertTimer);
+        alertTimer = setTimeout(() => setTheme(lastDash && lastDash.focus ? 'focus' : ''), 8000);
+      }
+    };
+
+    /* ----- 색 테마: 평상시(파랑) / 집중 모드(보라) / 경고(빨강) ----- */
+    function setTheme(t) {
+      document.body.dataset.theme = t || '';
+      $('themeTag').textContent = t === 'focus' ? 'FOCUS MODE' : t === 'alert' ? 'ALERT' : '';
+    }
+
+    /* ----- 고객사 레이더 맵 ----- */
+    const CITY_POS = { '도쿄': [35.68, 139.69], '이스탄불': [41.01, 28.98], '서울': [37.57, 126.98] };
+    function bearingKm(a, b) {
+      const R = Math.PI / 180, [la1, lo1] = a, [la2, lo2] = b;
+      const y = Math.sin((lo2 - lo1) * R) * Math.cos(la2 * R);
+      const x = Math.cos(la1 * R) * Math.sin(la2 * R) - Math.sin(la1 * R) * Math.cos(la2 * R) * Math.cos((lo2 - lo1) * R);
+      const brg = Math.atan2(y, x);
+      const d = 2 * 6371 * Math.asin(Math.sqrt(Math.sin((la2 - la1) * R / 2) ** 2 + Math.cos(la1 * R) * Math.cos(la2 * R) * Math.sin((lo2 - lo1) * R / 2) ** 2));
+      return { brg, km: d };
+    }
+    function workCode(w) {
+      const t = localParts(w.tz);
+      if (/공휴일/.test(w.status || '') || t.weekend) return 'off';
+      if (t.h >= 9 && t.h < 18) return t.h === 12 ? 'lunch' : 'on';
+      return 'off';
+    }
+    function renderRadar() {
+      const svg = $('radarMap');
+      if (!svg) return;
+      const cx = 160, cy = 100;
+      let html = '';
+      [30, 60, 90].forEach(r => { html += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="rgba(63,208,255,.18)" stroke-dasharray="2 4"/>'; });
+      html += '<line x1="' + (cx - 95) + '" y1="' + cy + '" x2="' + (cx + 95) + '" y2="' + cy + '" stroke="rgba(63,208,255,.12)"/><line x1="' + cx + '" y1="5" x2="' + cx + '" y2="195" stroke="rgba(63,208,255,.12)"/>';
+      html += '<g class="sweep"><path d="M' + cx + ' ' + cy + ' L' + (cx + 92) + ' ' + cy + ' A92 92 0 0 0 ' + (cx + 92 * Math.cos(-0.5)) + ' ' + (cy + 92 * Math.sin(-0.5)) + ' Z" fill="rgba(63,208,255,.10)"/></g>';
+      html += '<circle cx="' + cx + '" cy="' + cy + '" r="4" fill="#dff4ff"/><text x="' + cx + '" y="' + (cy + 15) + '" font-size="9" fill="#7fa6c4" text-anchor="middle">서울</text>';
+      const colors = { on: '#4fffb0', lunch: '#ffb547', off: '#7fa6c4' };
+      (worldData || []).forEach(w => {
+        const p = CITY_POS[w.city];
+        if (!p) return;
+        const g = bearingKm(CITY_POS['서울'], p);
+        const r = Math.min(88, 30 + 30 * Math.log10(g.km / 300));   // 거리는 눈금 간격을 줄인 로그 비율
+        const x = cx + r * Math.sin(g.brg), y = cy - r * Math.cos(g.brg);
+        const c = colors[workCode(w)];
+        const t = localParts(w.tz).time;
+        html += '<line x1="' + cx + '" y1="' + cy + '" x2="' + x.toFixed(1) + '" y2="' + y.toFixed(1) + '" stroke="' + c + '" stroke-opacity=".35" stroke-dasharray="3 3"/>';
+        html += '<circle class="blip" cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="5" fill="' + c + '" style="filter:drop-shadow(0 0 5px ' + c + ')"/>';
+        const anchor = x < cx ? 'end' : 'start';          // 글자는 바깥쪽으로
+        const tx = x < cx ? x - 9 : x + 9;
+        html += '<text x="' + tx.toFixed(1) + '" y="' + (y - 2).toFixed(1) + '" font-size="10" fill="#dff4ff" text-anchor="' + anchor + '">' + w.clients + ' · ' + w.city + '</text>';
+        html += '<text x="' + tx.toFixed(1) + '" y="' + (y + 10).toFixed(1) + '" font-size="9" fill="' + c + '" text-anchor="' + anchor + '" font-family="Share Tech Mono">' + t + ' · ' + Math.round(g.km).toLocaleString() + 'km</text>';
+      });
+      svg.innerHTML = html;
+    }
+    setInterval(renderRadar, 30000);
+
+    /* ----- 샘플 진행 보드 + 선적 ----- */
+    function renderPipeline(d) {
+      const kb = $('kanban');
+      if (d.samples) {
+        kb.innerHTML = '';
+        const today = new Date().toISOString().slice(0, 10);
+        ['준비', '발송', '평가중', '승인'].forEach(s => {
+          const col = document.createElement('div'); col.className = 'kcol';
+          const items = d.samples[s] || [];
+          const h = document.createElement('h5'); h.innerHTML = s + ' <b>' + items.length + '</b>';
+          col.appendChild(h);
+          items.slice(0, 3).forEach(it => {
+            const c = document.createElement('div');
+            c.className = 'kcard' + (s === '평가중' && it.due && it.due < today ? ' late' : '');
+            c.textContent = it.customer + ' ' + it.item;
+            if (it.due) { const sm = document.createElement('small'); sm.textContent = '기한 ' + it.due.slice(5); c.appendChild(sm); }
+            col.appendChild(c);
+          });
+          if (items.length > 3) { const more = document.createElement('small'); more.style.color = 'var(--muted)'; more.textContent = '+' + (items.length - 3); col.appendChild(more); }
+          kb.appendChild(col);
+        });
+      }
+      const sl = $('shipList');
+      sl.innerHTML = '';
+      const ships = (d.ships || []).filter(s => s.status !== '도착');
+      if (!ships.length) { sl.innerHTML = '<li class="empty">진행 중인 선적 없음</li>'; return; }
+      const in3 = new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10);
+      ships.forEach(s => {
+        const li = document.createElement('li');
+        if (s.eta && s.eta <= in3) li.className = 'soon';
+        const a = document.createElement('span'); a.textContent = '🚢 ' + s.customer + ' ' + s.item + (s.status ? ' (' + s.status + ')' : '');
+        const b = document.createElement('span'); b.className = 'eta'; b.textContent = s.eta ? 'ETA ' + s.eta.slice(5) : '-';
+        li.append(a, b);
+        sl.appendChild(li);
+      });
+    }
+
+    /* ----- 패널 갱신 감싸기: 레이더, 진행 보드, 테마, 짧은 대답 모드 ----- */
+    let lastDash = null;
+    const _renderDashboard3 = renderDashboard;
+    renderDashboard = function (d) {
+      _renderDashboard3(d);
+      lastDash = d;
+      try { renderRadar(); } catch (e) { }
+      try { renderPipeline(d); } catch (e) { }
+      if (document.body.dataset.theme !== 'alert') setTheme(d.focus ? 'focus' : (d.diag && d.diag.issues ? 'alert' : ''));
+      fx3.shortMode = !!d.shortMode;
+      $('sysShort').textContent = fx3.shortMode ? '켜짐' : '꺼짐';
+    };
+
+    /* ----- 야간 자동 밝기 (밤 10시~아침 6시) ----- */
+    function applyNight() {
+      const h = new Date().getHours();
+      document.body.classList.toggle('night', fx3.night === 'auto' && (h >= 22 || h < 6));
+    }
+    applyNight();
+    setInterval(applyNight, 60000);
+
+    /* ----- 미니 모드 (상단 버튼, 휴대폰 하단 바, 키보드 M) ----- */
+    function setMini(on) {
+      fx3.mini = on;
+      document.body.classList.toggle('mini', on);
+      $('miniBtn').classList.toggle('on', on);
+      store.set('jarvis_mini', on ? '1' : '0');
+    }
+    setMini(fx3.mini);
+    $('miniBtn').onclick = () => setMini(!fx3.mini);
+    $('mbMini').onclick = () => setMini(!fx3.mini);
+    $('mbTalk').onclick = () => talkOnce();
+    $('mbConsole').onclick = () => openConsole(true);
+    document.addEventListener('keydown', (e) => {
+      const tag = document.activeElement.tagName;
+      if ((e.key === 'm' || e.key === 'M') && tag !== 'TEXTAREA' && tag !== 'INPUT' && tag !== 'SELECT' && !e.ctrlKey && !e.metaKey) setMini(!fx3.mini);
+    });
+
+    /* ----- 설정 창: 효과음, 야간 밝기, 짧은 대답 모드 ----- */
+    const _openSettings3 = openSettings;
+    openSettings = function () {
+      _openSettings3();
+      $('cfgSfx').value = fx3.sfx ? '1' : '0';
+      $('cfgNight').value = fx3.night;
+      $('cfgShort').value = fx3.shortMode ? '1' : '0';
+    };
+    $('settingsBtn').onclick = openSettings;
+    $('cfgSave').addEventListener('click', () => {
+      fx3.sfx = $('cfgSfx').value === '1';
+      fx3.night = $('cfgNight').value;
+      store.set('jarvis_sfx', fx3.sfx ? '1' : '0');
+      store.set('jarvis_night', fx3.night);
+      applyNight();
+      const wantShort = $('cfgShort').value === '1';
+      if (wantShort !== fx3.shortMode && settings.token) {
+        // 짧은 대답 모드는 서버에 저장 (휴대폰·워치·텔레그램 모두 적용)
+        api({ action: 'chat', message: wantShort ? '짧은 대답 모드 켜줘' : '짧은 대답 모드 꺼줘', device: 'settings', silent: true })
+          .then(r => { if (r.ok) { fx3.shortMode = wantShort; $('sysShort').textContent = wantShort ? '켜짐' : '꺼짐'; addMsg('system', r.reply); } })
+          .catch(() => {});
+      }
+    });
+  </script>
+
 </body>
 </html>
