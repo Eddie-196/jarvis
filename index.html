@@ -809,6 +809,147 @@
       /* 설정 창: 화면 안에서 스크롤 */
       .modal { max-height: calc(100dvh - 24px); overflow-y: auto; }
     }
+
+    /* ==========================================================
+       13. 4차 화면 연출 (자비스가 계속 일하는 모습)
+           배경 캔버스, 작업 기록 띠, 스캔·반사광, 궤도 위성, 신경망,
+           진행률 링, 들은 단어, 지구본, 경보 테두리, 화면 보호, 완료 효과, 위젯
+       ========================================================== */
+    #bgFx { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+    .tint { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: .2; transition: background 3s ease;
+      background: radial-gradient(ellipse at 50% -10%, var(--tintc, #2a8cff) 0%, transparent 62%); }
+
+    /* 작업 기록 띠 (실제 서버·화면 작업만 표시) */
+    .ticker { position: fixed; left: 0; right: 0; bottom: 0; z-index: 12; height: 30px; display: flex; align-items: center; gap: 10px;
+      padding: 0 12px; background: linear-gradient(90deg, rgba(2, 14, 30, 0.92), rgba(4, 26, 52, 0.82)); border-top: 1px solid var(--line);
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font-family: var(--mono); font-size: 12px; color: var(--muted); overflow: hidden; }
+    .tk-label { color: var(--green); font-size: 10.5px; letter-spacing: 2px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .tk-label::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: blink 1.4s infinite; }
+    .tk-view { flex: 1; overflow: hidden; white-space: nowrap; mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); }
+    .tk-track { display: inline-block; white-space: nowrap; padding-left: 100%; animation: tkMove var(--tkdur, 40s) linear infinite; }
+    .tk-track span { margin-right: 36px; }
+    .tk-track b { color: var(--cyan); font-weight: 400; margin-right: 6px; }
+    .tk-track .new { color: var(--text); }
+    @keyframes tkMove { to { transform: translateX(-100%); } }
+    footer { padding-bottom: 44px; }
+
+    /* 패널 갱신 스캔 + 마우스 반사광 */
+    .fx-layer { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; z-index: 0;
+      background: radial-gradient(circle at var(--gx, -200px) var(--gy, -200px), rgba(190, 240, 255, 0.09), transparent 170px); }
+    .fx-layer::after { content: ''; position: absolute; left: 0; right: 0; height: 40%; top: -45%;
+      background: linear-gradient(180deg, transparent, rgba(110, 230, 255, 0.16) 60%, rgba(160, 245, 255, 0.35) 98%, transparent); opacity: 0; }
+    .panel.scan .fx-layer::after { animation: scanDown .9s ease-out; }
+    @keyframes scanDown { 0% { top: -45%; opacity: 1; } 100% { top: 105%; opacity: .2; } }
+    .col .panel > *:not(.fx-layer) { position: relative; z-index: 1; }
+
+    /* 궤도 위성 (대기 중인 작업 수만큼) */
+    .orbits { position: absolute; inset: 0; pointer-events: none; }
+    .sat { position: absolute; left: 50%; top: 50%; width: 9px; height: 9px; margin: -4.5px; border-radius: 50%; background: var(--teal);
+      box-shadow: 0 0 10px var(--teal), 0 0 22px var(--glow); animation: orbit var(--dur, 8s) linear infinite; }
+    .sat::after { content: ''; position: absolute; right: 6px; top: 3px; width: 26px; height: 2px; border-radius: 2px; background: linear-gradient(90deg, transparent, var(--teal)); opacity: .6; transform: rotate(90deg); transform-origin: right center; }
+    @keyframes orbit { from { transform: rotate(var(--a, 0deg)) translateX(var(--rad, 210px)); } to { transform: rotate(calc(var(--a, 0deg) + 360deg)) translateX(var(--rad, 210px)); } }
+
+    /* 신경망 (처리 중일 때 코어 안) */
+    .neural { position: absolute; left: 50%; top: 50%; width: 30%; height: 30%; transform: translate(-50%, -50%); pointer-events: none; border-radius: 50%; opacity: 0; transition: opacity .4s; }
+    .reactor[data-state="thinking"] .neural { opacity: .95; }
+    .reactor[data-state="thinking"] .core-label, .reactor[data-state="thinking"] .core-sub { opacity: .25; }
+
+    /* 진행률 링 */
+    .prog-ring { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; transition: opacity .5s; overflow: visible; }
+    .prog-ring.show { opacity: 1; }
+    .prog-ring circle { fill: none; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 200px 200px; }
+    #progArc { stroke: var(--green); stroke-width: 4; filter: drop-shadow(0 0 6px var(--green)); transition: stroke-dasharray .8s ease; }
+    .prog-label { font-family: var(--mono); font-size: 12px; color: var(--green); min-height: 16px; text-align: center; letter-spacing: .5px; }
+
+    /* 들은 단어가 코어 주변에 떠오름 */
+    .heard-words { position: absolute; inset: 0; pointer-events: none; }
+    .hword { position: absolute; transform: translate(-50%, -50%); font-size: 15px; color: var(--teal); text-shadow: 0 0 10px var(--glow); white-space: nowrap;
+      animation: hwordUp 2.4s ease-out forwards; }
+    @keyframes hwordUp { 0% { opacity: 0; filter: blur(4px); } 15% { opacity: 1; filter: none; } 100% { opacity: 0; transform: translate(-50%, -160%) scale(1.15); } }
+
+    /* 오늘의 한 장 */
+    .today-one { display: none; width: min(100%, 560px); padding: 10px 14px; border-radius: 14px; border: 1px solid var(--line-strong);
+      background: linear-gradient(120deg, rgba(79, 255, 176, 0.10), rgba(4, 22, 44, 0.6)); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); font-size: 13px; }
+    .today-one.show { display: block; animation: holoIn .5s ease; }
+    .today-one h4 { font-family: var(--tech); font-size: 9.5px; letter-spacing: 2px; color: var(--green); font-weight: 500; margin-bottom: 4px; }
+    .today-one b { font-size: 15px; font-weight: 500; }
+    .today-one small { display: block; color: var(--muted); margin-top: 3px; }
+
+    /* 자막 아래 음성 파형 */
+    .cap-wave { display: block; width: 100%; height: 18px; margin-top: 4px; }
+
+    /* 3D 지구본 */
+    .globe { display: none; width: 100%; aspect-ratio: 360 / 230; }
+    body.globe-on .globe { display: block; }
+    body.globe-on #radarMap { display: none; }
+    .radar-map .ripple { fill: none; stroke-width: 1.6; transform-box: fill-box; transform-origin: center; animation: rip 2.2s ease-out infinite; }
+    @keyframes rip { from { transform: scale(1); opacity: .95; } to { transform: scale(7); opacity: 0; } }
+
+    /* 오류 순간 화면 흔들림 */
+    body.glitch .app { animation: glitch .45s steps(2, end); }
+    @keyframes glitch {
+      0% { transform: translate(0); filter: none; }
+      20% { transform: translate(-3px, 1px); filter: drop-shadow(3px 0 rgba(255, 60, 80, .7)) drop-shadow(-3px 0 rgba(60, 220, 255, .7)); }
+      40% { transform: translate(3px, -1px); filter: hue-rotate(40deg); }
+      60% { transform: translate(-2px, 0); filter: drop-shadow(-2px 0 rgba(255, 60, 80, .6)); }
+      100% { transform: translate(0); filter: none; }
+    }
+
+    /* 긴급 경보 테두리 */
+    .urgent-frame { position: fixed; inset: 0; z-index: 80; pointer-events: none; display: none; box-shadow: inset 0 0 0 3px rgba(255, 70, 80, .9), inset 0 0 60px rgba(255, 50, 60, .55); animation: urgentPulse 1.2s ease-in-out infinite; }
+    .urgent-frame.show { display: block; }
+    @keyframes urgentPulse { 50% { box-shadow: inset 0 0 0 2px rgba(255, 70, 80, .4), inset 0 0 20px rgba(255, 50, 60, .2); } }
+    .urgent-box { pointer-events: auto; position: absolute; top: 14px; left: 50%; transform: translateX(-50%); width: min(92vw, 520px); padding: 12px 14px; border-radius: 14px;
+      background: rgba(40, 6, 12, 0.92); border: 1px solid rgba(255, 100, 110, .8); box-shadow: 0 0 30px rgba(255, 60, 70, .5); color: #ffe3e5; font-size: 13.5px; }
+    .urgent-box h4 { font-family: var(--tech); letter-spacing: 3px; font-size: 11px; color: #ff8a92; margin-bottom: 6px; }
+    .urgent-box ul { list-style: none; margin-bottom: 8px; }
+    .urgent-box li { padding: 3px 0; }
+    .urgent-box .btns { display: flex; gap: 8px; justify-content: flex-end; }
+    .urgent-box button { border: 1px solid rgba(255, 120, 130, .7); background: rgba(255, 80, 90, .15); color: #fff; border-radius: 10px; padding: 6px 12px; font-family: inherit; cursor: pointer; }
+
+    /* 화면 보호 모드 */
+    .saver { position: fixed; inset: 0; z-index: 70; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+      background: radial-gradient(ellipse at center, rgba(4, 30, 60, 0.96), rgba(1, 6, 14, 0.99)); cursor: none; }
+    body.saver-on .saver { display: flex; animation: fadeIn 1.2s ease; }
+    .saver .sv-ring { width: 120px; height: 120px; border-radius: 50%; border: 2px solid var(--cyan); box-shadow: 0 0 40px var(--glow), inset 0 0 30px var(--glow); animation: svBreath 4s ease-in-out infinite; }
+    @keyframes svBreath { 50% { transform: scale(1.06); box-shadow: 0 0 60px var(--glow), inset 0 0 40px var(--glow); } }
+    .saver .sv-time { font-family: var(--mono); font-size: clamp(56px, 12vw, 120px); color: var(--text); text-shadow: 0 0 24px var(--glow); letter-spacing: 4px; }
+    .saver .sv-date { color: var(--muted); font-size: 15px; letter-spacing: 2px; }
+    .saver .sv-next { color: var(--cyan); font-size: 15px; text-align: center; max-width: 90vw; }
+    .saver .sv-hint { position: absolute; bottom: 30px; color: var(--muted); font-size: 12px; }
+
+    /* 할 일 완료 효과 */
+    .done-burst { position: fixed; inset: 0; z-index: 60; pointer-events: none; display: none; align-items: center; justify-content: center; }
+    .done-burst.show { display: flex; }
+    .done-burst svg { width: 180px; height: 180px; filter: drop-shadow(0 0 18px var(--green)); animation: burstPop 1.6s ease forwards; }
+    .done-burst .ck { stroke-dasharray: 120; stroke-dashoffset: 120; animation: ckDraw .5s .15s ease forwards; }
+    @keyframes ckDraw { to { stroke-dashoffset: 0; } }
+    @keyframes burstPop { 0% { transform: scale(.4); opacity: 0; } 18% { transform: scale(1.08); opacity: 1; } 70% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.25); opacity: 0; } }
+
+    /* 패널 조립 연출 (부팅 직후 한 번) */
+    .assemble { animation: assemble .6s cubic-bezier(.2, .8, .2, 1) both; }
+    @keyframes assemble { from { opacity: 0; transform: translateY(14px) scale(.97); clip-path: inset(0 0 100% 0 round 16px); } to { opacity: 1; transform: none; clip-path: inset(0 0 0 0 round 16px); } }
+
+    /* 입체 효과 (마우스·기울기) */
+    .col, .center .reactor { transition: transform .25s ease-out; will-change: transform; }
+
+    /* PC 미니 위젯 (?widget=1) */
+    body.widget .ctrls, body.widget .logo span, body.widget .clock, body.widget .col, body.widget .hint, body.widget footer,
+    body.widget .open-console, body.widget .mobile-bar, body.widget .chev-row, body.widget .theme-tag { display: none !important; }
+    body.widget .app { padding: 8px 10px 0; gap: 8px; }
+    body.widget .topbar { padding: 8px 12px; grid-template-columns: 1fr auto; }
+    body.widget .logo { font-size: 13px; letter-spacing: 3px; }
+    body.widget .hud { grid-template-columns: 1fr; grid-template-areas: "center"; }
+    body.widget .reactor { width: min(100%, 250px) !important; }
+    body.widget .reply-cap p { font-size: 13px; }
+    body.widget .err-pop { position: fixed; top: 60px; left: 8px; right: 8px; width: auto; }
+
+    @media (max-width: 640px) {
+      .ticker { bottom: calc(84px + env(safe-area-inset-bottom)); left: 12px; right: 12px; border-radius: 10px; border: 1px solid var(--line); height: 26px; font-size: 11px; }
+      body.console-open .ticker, body.modal-open .ticker { display: none; }
+      footer { padding-bottom: calc(120px + env(safe-area-inset-bottom)); }
+      .sat { width: 7px; height: 7px; margin: -3.5px; }
+    }
   </style>
 </head>
 <body data-state="idle">
@@ -960,7 +1101,16 @@
             <text class="core-label" id="coreLabel" x="200" y="198" text-anchor="middle">OFFLINE</text>
             <text class="core-sub" id="coreSub" x="200" y="218" text-anchor="middle">대기 꺼짐</text>
           </svg>
+          <!-- 4차 연출: 궤도 위성, 신경망, 진행률 링, 들은 단어 -->
+          <div class="orbits" id="orbits"></div>
+          <canvas class="neural" id="neural" width="240" height="240"></canvas>
+          <svg class="prog-ring" id="progRing" viewBox="0 0 400 400">
+            <circle cx="200" cy="200" r="192" stroke="rgba(79,255,176,.15)" stroke-width="4"/>
+            <circle id="progArc" cx="200" cy="200" r="192" stroke-dasharray="0 1207"/>
+          </svg>
+          <div class="heard-words" id="heardWords"></div>
         </div>
+        <div class="prog-label" id="progLabel"></div>
 
         <div class="chev-row">
           <div class="chevs left"><i></i><i></i><i></i><i></i></div>
@@ -986,6 +1136,8 @@
           코어를 누르면 호출어 없이 바로 말할 수 있습니다.
         </p>
         <!-- 답변 자막: 명령 창을 열지 않아도 마지막 답변을 잠깐 보여줌 -->
+        <!-- 오늘의 한 장 -->
+        <div class="today-one" id="todayOne"></div>
         <div class="reply-cap" id="replyCap">
           <span class="cap-who">J.A.R.V.I.S.</span>
           <p id="capText"></p>
@@ -1025,8 +1177,9 @@
 
         <!-- 고객사 레이더 맵: 서울 기준 방향·거리, 점 색 = 지금 연락 가능 여부 -->
         <section class="panel">
-          <div class="panel-title">CLIENT RADAR <small>서울 기준</small></div>
+          <div class="panel-title">CLIENT RADAR <span style="display:flex;gap:8px;align-items:center"><small>서울 기준</small><button class="hbtn mini-btn" id="globeBtn" title="2D 레이더와 3D 지구본 전환">3D</button></span></div>
           <svg class="radar-map" id="radarMap" viewBox="0 0 360 230"></svg>
+          <canvas class="globe" id="globe"></canvas>
           <div class="radar-legend"><span><i style="background:#4fffb0"></i>근무 중</span><span><i style="background:#ffb547"></i>점심</span><span><i style="background:#7fa6c4"></i>근무 외·휴일</span></div>
         </section>
 
@@ -1120,12 +1273,54 @@
         <select id="cfgShort"><option value="0">끄기</option><option value="1">켜기</option></select>
       </div>
 
+      <div class="field">
+        <label>배경 데이터 효과 (흐르는 숫자, 작업 빛 입자)</label>
+        <select id="cfgRain"><option value="auto">자동 (PC만 켜기)</option><option value="on">항상 켜기</option><option value="off">끄기</option></select>
+      </div>
+
+      <div class="field">
+        <label>대기 중 잔잔한 기계음</label>
+        <select id="cfgHum"><option value="0">끄기</option><option value="1">켜기</option></select>
+      </div>
+
+      <div class="field">
+        <label>화면 보호 모드 (10분 동안 입력 없으면 시계만 표시)</label>
+        <select id="cfgSaver"><option value="1">켜기</option><option value="0">끄기</option></select>
+      </div>
+
+      <div class="field">
+        <label>휴대폰 기울기 입체 효과</label>
+        <button class="btn" id="cfgTilt" type="button">기울기 효과 켜기 (아이폰은 허용 필요)</button>
+      </div>
+
       <div class="modal-actions">
         <button class="btn" id="cfgTest">연결 테스트</button>
         <button class="btn" id="cfgClose">닫기</button>
         <button class="btn primary" id="cfgSave">저장</button>
       </div>
     </div>
+  </div>
+
+  <!-- ===== 4차 연출용 요소 ===== -->
+  <canvas id="bgFx"></canvas>
+  <div class="tint" id="tint"></div>
+  <div class="ticker" id="ticker"><span class="tk-label">LIVE</span><div class="tk-view"><div class="tk-track" id="tkTrack"></div></div></div>
+  <div class="urgent-frame" id="urgentFrame">
+    <div class="urgent-box">
+      <h4>PRIORITY ALERT</h4>
+      <ul id="urgentList"></ul>
+      <div class="btns"><button id="urgentReport">내용 보고받기</button><button id="urgentAck">확인</button></div>
+    </div>
+  </div>
+  <div class="saver" id="saver">
+    <div class="sv-ring"></div>
+    <div class="sv-time" id="svTime">00:00</div>
+    <div class="sv-date" id="svDate"></div>
+    <div class="sv-next" id="svNext"></div>
+    <div class="sv-hint">화면을 누르거나 "자비스"라고 부르면 돌아갑니다</div>
+  </div>
+  <div class="done-burst" id="doneBurst">
+    <svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="50" fill="rgba(79,255,176,.08)" stroke="#4fffb0" stroke-width="3"/><circle cx="60" cy="60" r="40" fill="none" stroke="rgba(79,255,176,.4)" stroke-dasharray="4 6"/><path class="ck" d="M38 62 L54 77 L84 45" fill="none" stroke="#dfffee" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </div>
 
   <!-- ===== 부팅 장면 (처음 열 때만, 누르면 건너뜀) ===== -->
@@ -2374,6 +2569,7 @@
        아이폰 사파리처럼 화면을 한 번 눌러야 하는 경우, 첫 터치 때 자동으로 켠다. */
     function autoStartWake() {
       if (wakeOn || !settings.wakeAlways || inFrame || !SR || !window.isSecureContext) return;
+      if (/[?&]widget=1/.test(location.search)) return;   // PC 위젯은 호출어를 듣지 않음 (본 화면과 동시 반응 방지)
       wakeOn = true;
       recFailCount = 0;
       recPaused = false;
@@ -2449,7 +2645,13 @@
     /* ----- 시간대별 인사 ----- */
     function greetingText() {
       const h = new Date().getHours();
-      return h < 5 ? '늦은 시간까지 수고하십니다' : h < 11 ? '좋은 아침입니다' : h < 14 ? '점심은 드셨습니까' : h < 18 ? '오후도 순조롭길 바랍니다' : h < 22 ? '좋은 저녁입니다' : '오늘도 고생 많으셨습니다';
+      // 같은 시간대에도 인사를 바꿔 가며 사용 (대사 다양화)
+      const set = h < 5 ? ['늦은 시간까지 수고하십니다', '새벽 근무는 제가 함께하겠습니다'] :
+        h < 11 ? ['좋은 아침입니다', '상쾌한 아침입니다', '오늘도 준비를 마쳐 두었습니다'] :
+          h < 14 ? ['점심은 드셨습니까', '오전 업무 수고하셨습니다'] :
+            h < 18 ? ['오후도 순조롭길 바랍니다', '오후 업무를 보좌하겠습니다'] :
+              h < 22 ? ['좋은 저녁입니다', '오늘 하루도 수고 많으셨습니다'] : ['오늘도 고생 많으셨습니다', '야간 근무 모드로 보좌하겠습니다'];
+      return set[Math.floor(Math.random() * set.length)];
     }
 
     /* ----- 부팅 장면: 이 탭에서 처음 열 때만 (박수로 열린 경우 빠르게) ----- */
@@ -2458,7 +2660,7 @@
       let seen = false;
       try { seen = sessionStorage.getItem('jarvis_booted') === '1'; sessionStorage.setItem('jarvis_booted', '1'); } catch (e) { }
       const fast = /[?&]wake=1/.test(location.search);
-      if (seen) { boot.classList.add('hide'); return; }
+      if (seen || /[?&]widget=1/.test(location.search)) { boot.classList.add('hide'); return; }
       const lines = [
         '> 시스템 초기화 ............ <span class="ok">OK</span>',
         '> 음성 인식 모듈 ........... <span class="ok">OK</span>',
@@ -2574,6 +2776,7 @@
 
     /* ----- 고객사 레이더 맵 ----- */
     const CITY_POS = { '도쿄': [35.68, 139.69], '이스탄불': [41.01, 28.98], '런던': [51.51, -0.13], '워싱턴 D.C.': [38.91, -77.04], '멕시코시티': [19.43, -99.13], '서울': [37.57, 126.98] };
+    const ripples = {};   // 고객 메일이 새로 온 도시 → 물결 표시 끝나는 시각
     // 서버를 아직 새 버전으로 배포하지 않았어도 세계 시계에 보이도록 화면에서 기본 도시를 보충 (공휴일 정보는 서버 배포 후 표시)
     const EXTRA_CITIES = [
       { city: '런던', tz: 'Europe/London', country: 'GB', clients: '영국', status: '', next_holidays: [] },
@@ -2613,6 +2816,7 @@
         const x = cx + r * Math.sin(g.brg), y = cy - r * Math.cos(g.brg);
         const c = colors[workCode(w)];
         html += '<line x1="' + cx + '" y1="' + cy + '" x2="' + x.toFixed(1) + '" y2="' + y.toFixed(1) + '" stroke="' + c + '" stroke-opacity=".35" stroke-dasharray="3 3"/>';
+        if (ripples[w.city] > Date.now()) [0, 0.7, 1.4].forEach(dl => { html += '<circle class="ripple" cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="4.5" stroke="' + c + '" style="animation-delay:' + dl + 's"/>'; });
         html += '<circle class="blip" cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="4.5" fill="' + c + '" style="filter:drop-shadow(0 0 5px ' + c + ')"/>';
         // 고객사가 있는 도시는 "Sony · 도쿄", 나머지는 도시 이름만
         const name = /[A-Za-z]/.test(w.clients || '') ? w.clients + ' · ' + w.city : w.city;
@@ -2750,6 +2954,686 @@
     if (window.matchMedia('(max-width: 640px)').matches) inputEl.placeholder = '자비스에게 명령하기';
     // 첫 패널 데이터가 이 확장 기능이 준비되기 전에 먼저 도착한 경우, 레이더·진행 보드까지 다시 그림
     if (!lastDash && $('evCount').textContent !== '-') loadDashboard();
+  </script>
+
+  <script>
+    /* ==========================================================
+       19. 4차 화면 연출: 자비스가 실제로 하는 일을 눈에 보이게
+           원칙: 꾸며낸 작업은 보여주지 않는다. 서버 작업 기록, 진행률,
+                 대기 중 작업 수, 화면에서 실제로 일어난 일만 연출에 사용
+       ========================================================== */
+    const isWidget = /[?&]widget=1/.test(location.search);
+    const isPhone = window.matchMedia('(max-width: 640px)').matches;
+    const fx4 = {
+      rain: store.get('jarvis_rain', 'auto'),           // 배경 데이터 효과: auto | on | off
+      hum: store.get('jarvis_hum', '0') === '1',         // 대기 기계음
+      saver: store.get('jarvis_saver', '1') === '1',     // 화면 보호 모드
+      globe: store.get('jarvis_globe', '0') === '1',     // 3D 지구본
+      tilt: false
+    };
+    const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+    const centerOf = (el) => { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height }; };
+
+    /* ----- 99. PC 미니 위젯 모드: 작게, 호출어는 듣지 않음 ----- */
+    if (isWidget) {
+      document.body.classList.add('widget');
+      document.title = 'JARVIS 위젯';                    // 박수 프로그램이 본 화면과 헷갈리지 않도록 제목을 다르게
+      try { if (wakeOn) { stopWake(); wakeOn = false; } } catch (e) { }
+      settings.wakeAlways = false;
+      const b = $('boot'); if (b) b.remove();
+      backToRest();
+    }
+
+    /* ----- 92. 대사 다양화: 호출 응답 문구를 돌려 씀 ----- */
+    const _enterAwait4 = enterAwait;
+    enterAwait = function (source) {
+      _enterAwait4(source);
+      if (!awaitingCommand) return;
+      setState('listening', source === '박수'
+        ? pick(['박수 확인, 말씀하세요', '부르셨습니까', '네, 대기 중입니다'])
+        : pick(['네, 말씀하세요', '듣고 있습니다', '무엇을 도와드릴까요', '명령을 기다립니다', '네, 준비됐습니다']));
+      tick('호출어 감지, 명령 대기');
+    };
+
+    /* ==========================================================
+       77. 작업 기록 띠
+       ========================================================== */
+    const tkItems = [];
+    const tkSeen = {};
+    function tick(msg, time) {
+      const t = time || new Date().toTimeString().slice(0, 5);
+      const key = t + msg;
+      if (tkSeen[key]) return false;
+      tkSeen[key] = true;
+      tkItems.push({ t, m: msg, at: Date.now() });
+      while (tkItems.length > 14) tkItems.shift();
+      renderTicker();
+      return true;
+    }
+    let tkTimer = null;
+    function renderTicker() {
+      clearTimeout(tkTimer);
+      tkTimer = setTimeout(() => {
+        const tr = $('tkTrack');
+        const recent = Date.now() - 15000;
+        tr.innerHTML = tkItems.slice().reverse().map(x =>
+          '<span' + (x.at > recent ? ' class="new"' : '') + '><b>' + x.t + '</b>' + String(x.m).replace(/[<>&]/g, '') + '</span>').join('');
+        const len = tr.textContent.length;
+        tr.style.setProperty('--tkdur', Math.max(25, len * 0.22) + 's');
+        tr.style.animation = 'none'; void tr.offsetWidth; tr.style.animation = '';   // 처음부터 다시 흐르게
+      }, 300);
+    }
+    function absorbActivity(list) {
+      let added = 0;
+      (list || []).forEach(a => { if (tick(a.m, a.t)) added++; });
+      if (added) flowOut(Math.min(6, 2 + added));      // 서버가 새 일을 했으면 코어에서 빛이 퍼져 나감
+    }
+    tick('화면 시작, 서버 연결 확인');
+
+    /* ==========================================================
+       76·86. 배경 캔버스: 데이터 흐름 입자 + 흐르는 숫자
+       ========================================================== */
+    const bg = $('bgFx');
+    const bctx = bg.getContext('2d');
+    let bw = 0, bh = 0, bdpr = 1;
+    function bgResize() {
+      bdpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      bw = window.innerWidth; bh = window.innerHeight;
+      bg.width = bw * bdpr; bg.height = bh * bdpr;
+      bctx.setTransform(bdpr, 0, 0, bdpr, 0, 0);
+      initRain();
+    }
+    let rainCols = [];
+    function rainOn() { return fx4.rain === 'on' || (fx4.rain === 'auto' && !isPhone && !isWidget); }
+    function initRain() {
+      const n = Math.floor(bw / 22);
+      rainCols = Array.from({ length: n }, (_, i) => ({ x: i * 22 + 6, y: Math.random() * bh, sp: 0.6 + Math.random() * 1.4, len: 6 + Math.floor(Math.random() * 8), ch: [] }));
+    }
+    const HEX = '0123456789ABCDEF<>/:=+#';
+    const particles = [];
+    // from → to 로 빛 입자 n개 (곡선 경로)
+    function spawnFlow(from, to, n, color) {
+      for (let i = 0; i < n; i++) {
+        const mx = (from.x + to.x) / 2 + (Math.random() - 0.5) * 160, my = (from.y + to.y) / 2 + (Math.random() - 0.5) * 120;
+        particles.push({ sx: from.x + (Math.random() - 0.5) * (from.w || 0) * 0.6, sy: from.y + (Math.random() - 0.5) * (from.h || 0) * 0.5, mx, my, ex: to.x, ey: to.y,
+          t: -i * 0.06, dur: 1.1 + Math.random() * 0.7, c: color || '95,242,224' });
+      }
+      if (particles.length > 220) particles.splice(0, particles.length - 220);
+    }
+    function panelEls() { return Array.from(document.querySelectorAll('.col .panel')).filter(p => p.offsetParent); }
+    function flowIn(n) {   // 패널 → 코어 (데이터를 모아 오는 모습)
+      if (isWidget) return;
+      const core = centerOf($('reactor'));
+      panelEls().forEach(p => spawnFlow(centerOf(p), core, n || 2));
+    }
+    function flowOut(n) {   // 코어 → 패널 (일을 처리해 내보내는 모습)
+      const core = centerOf($('reactor'));
+      const ps = panelEls();
+      for (let i = 0; i < (n || 4); i++) {
+        if (ps.length) spawnFlow(core, centerOf(pick(ps)), 1, '63,208,255');
+        else spawnFlow(core, { x: core.x + (Math.random() - 0.5) * 400, y: core.y + (Math.random() - 0.5) * 400 }, 1, '63,208,255');
+      }
+    }
+    let bgLast = 0, rainDirty = false;
+    function bgLoop(ts) {
+      requestAnimationFrame(bgLoop);
+      if (document.hidden || document.body.classList.contains('saver-on')) return;
+      if (ts - bgLast < 33) return;                       // 초당 약 30장
+      const dt = Math.min(0.1, (ts - bgLast) / 1000);
+      bgLast = ts;
+      const rain = rainOn();
+      if (!rain && !particles.length) { if (rainDirty) { bctx.clearRect(0, 0, bw, bh); rainDirty = false; } return; }
+      bctx.clearRect(0, 0, bw, bh);
+      rainDirty = true;
+      if (rain) {
+        bctx.font = '12px "Share Tech Mono", monospace';
+        const busyBoost = state === 'thinking' ? 2.2 : 1;
+        rainCols.forEach(c => {
+          c.y += c.sp * busyBoost * 30 * dt;
+          if (c.y - c.len * 16 > bh) { c.y = -20; c.sp = 0.6 + Math.random() * 1.4; }
+          for (let k = 0; k < c.len; k++) {
+            if (!c.ch[k] || Math.random() < 0.02) c.ch[k] = HEX[Math.floor(Math.random() * HEX.length)];
+            const a = (1 - k / c.len) * (k === 0 ? 0.22 : 0.07);
+            bctx.fillStyle = 'rgba(95,242,224,' + a.toFixed(3) + ')';
+            bctx.fillText(c.ch[k], c.x, c.y - k * 16);
+          }
+        });
+      }
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.t += dt / p.dur;
+        if (p.t < 0) continue;
+        if (p.t >= 1) { particles.splice(i, 1); continue; }
+        const q = (t) => { const u = 1 - t; return [u * u * p.sx + 2 * u * t * p.mx + t * t * p.ex, u * u * p.sy + 2 * u * t * p.my + t * t * p.ey]; };
+        const [x, y] = q(p.t), [x2, y2] = q(Math.max(0, p.t - 0.08));
+        const a = Math.sin(p.t * Math.PI);
+        bctx.strokeStyle = 'rgba(' + p.c + ',' + (a * 0.55).toFixed(3) + ')';
+        bctx.lineWidth = 1.6;
+        bctx.beginPath(); bctx.moveTo(x2, y2); bctx.lineTo(x, y); bctx.stroke();
+        bctx.fillStyle = 'rgba(' + p.c + ',' + (a * 0.9).toFixed(3) + ')';
+        bctx.beginPath(); bctx.arc(x, y, 2.2, 0, Math.PI * 2); bctx.fill();
+      }
+    }
+    window.addEventListener('resize', bgResize);
+    bgResize();
+    requestAnimationFrame(bgLoop);
+    // 처리 중에는 패널에서 코어로 데이터가 계속 모여드는 모습
+    setInterval(() => { if (state === 'thinking' && !document.hidden) { const ps = panelEls(); if (ps.length) spawnFlow(centerOf(pick(ps)), centerOf($('reactor')), 1); } }, 380);
+
+    /* ==========================================================
+       78·87. 패널 스캔 + 마우스 반사광
+       ========================================================== */
+    document.querySelectorAll('.col .panel').forEach(p => {
+      if (!p.querySelector(':scope > .fx-layer')) { const l = document.createElement('i'); l.className = 'fx-layer'; p.prepend(l); }
+    });
+    function scanPanels() {
+      panelEls().forEach((p, i) => setTimeout(() => { p.classList.remove('scan'); void p.offsetWidth; p.classList.add('scan'); }, i * 110));
+    }
+    document.addEventListener('pointermove', (e) => {
+      if (e.pointerType !== 'mouse') return;
+      const p = e.target.closest && e.target.closest('.col .panel');
+      if (!p) return;
+      const r = p.getBoundingClientRect(), l = p.querySelector(':scope > .fx-layer');
+      if (l) { l.style.setProperty('--gx', (e.clientX - r.left) + 'px'); l.style.setProperty('--gy', (e.clientY - r.top) + 'px'); }
+    });
+
+    /* ==========================================================
+       79. 숫자 굴러가기
+       ========================================================== */
+    function rollText(el) {
+      if (!el) return;
+      const txt = el.textContent;
+      const m = txt.match(/-?\d[\d,]*(\.\d+)?/);
+      if (!m) { el.dataset.prev = ''; return; }
+      const target = Number(m[0].replace(/,/g, ''));
+      const prev = el.dataset.prev === undefined || el.dataset.prev === '' ? null : Number(el.dataset.prev);
+      el.dataset.prev = target;
+      if (prev === null || prev === target || isNaN(prev)) return;
+      const dec = (m[1] || '').length ? m[1].length - 1 : 0;
+      const t0 = performance.now();
+      const step = (now) => {
+        const k = Math.min(1, (now - t0) / 700), e = 1 - Math.pow(1 - k, 3);
+        const v = prev + (target - prev) * e;
+        el.textContent = txt.replace(m[0], dec ? v.toFixed(dec) : Math.round(v).toLocaleString('ko-KR'));
+        if (k < 1) requestAnimationFrame(step); else el.textContent = txt;
+      };
+      requestAnimationFrame(step);
+    }
+    const ROLL_IDS = ['mailNum', 'mailUnread', 'mailNaver', 'evCount', 'taskCount', 'pHiN', 'pMidN', 'pLoN'];
+
+    /* ==========================================================
+       80. 궤도 위성 (대기 중인 실제 작업 수)
+       ========================================================== */
+    let pendingJobs = 0;
+    function renderOrbits() {
+      const n = Math.min(6, pendingJobs + (busy ? 1 : 0) + (lastProgress ? 1 : 0));
+      const box = $('orbits');
+      if (box.childElementCount === n) return;
+      box.innerHTML = '';
+      const size = $('reactor').clientWidth;
+      for (let i = 0; i < n; i++) {
+        const s = document.createElement('i');
+        s.className = 'sat';
+        s.style.setProperty('--rad', Math.round(size * (0.47 + (i % 3) * 0.025)) + 'px');
+        s.style.setProperty('--dur', (7 + i * 2.3) + 's');
+        s.style.setProperty('--a', Math.round(i * 360 / Math.max(n, 1)) + 'deg');
+        box.appendChild(s);
+      }
+    }
+
+    /* ==========================================================
+       81. 신경망 (처리 중일 때 코어 안)
+       ========================================================== */
+    const ncv = $('neural'), nctx = ncv.getContext('2d');
+    const nodes = Array.from({ length: 16 }, () => ({ x: Math.random() * 240, y: Math.random() * 240, vx: (Math.random() - 0.5) * 0.9, vy: (Math.random() - 0.5) * 0.9 }));
+    let neuralWas = false;
+    function neuralLoop() {
+      requestAnimationFrame(neuralLoop);
+      const on = state === 'thinking' && !document.hidden;
+      if (!on) { if (neuralWas) { nctx.clearRect(0, 0, 240, 240); neuralWas = false; } return; }
+      neuralWas = true;
+      nctx.clearRect(0, 0, 240, 240);
+      const col = getComputedStyle($('reactor')).getPropertyValue('--hud').trim() || '#ffb547';
+      nodes.forEach(n => {
+        n.x += n.vx; n.y += n.vy;
+        const dx = n.x - 120, dy = n.y - 120;
+        if (dx * dx + dy * dy > 105 * 105) { n.vx *= -1; n.vy *= -1; }
+      });
+      const t = performance.now() / 300;
+      for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i], b = nodes[j], d = Math.hypot(a.x - b.x, a.y - b.y);
+        if (d > 85) continue;
+        nctx.globalAlpha = (1 - d / 85) * (0.35 + 0.35 * Math.sin(t + i + j));
+        nctx.strokeStyle = col; nctx.lineWidth = 1.2;
+        nctx.beginPath(); nctx.moveTo(a.x, a.y); nctx.lineTo(b.x, b.y); nctx.stroke();
+      }
+      nctx.globalAlpha = 1;
+      nodes.forEach((n, i) => { nctx.fillStyle = col; nctx.beginPath(); nctx.arc(n.x, n.y, 2.4 + Math.sin(t * 2 + i) * 0.8, 0, Math.PI * 2); nctx.fill(); });
+    }
+    requestAnimationFrame(neuralLoop);
+
+    /* ==========================================================
+       90. 진행률 링 (서버의 긴 작업: 회의록, 심층 리포트)
+       ========================================================== */
+    let lastProgress = null, progTimer = null;
+    function renderProgress(p) {
+      lastProgress = p && p.pct < 100 ? p : null;
+      const ring = $('progRing'), C = 2 * Math.PI * 192;
+      if (p) {
+        ring.classList.add('show');
+        $('progArc').setAttribute('stroke-dasharray', (C * Math.min(100, p.pct) / 100).toFixed(1) + ' ' + C.toFixed(1));
+        $('progLabel').textContent = p.name + ' · ' + (p.step || '') + ' ' + p.pct + '%';
+        if (p.pct >= 100) setTimeout(() => { ring.classList.remove('show'); $('progLabel').textContent = ''; }, 2500);
+      } else {
+        ring.classList.remove('show');
+        $('progLabel').textContent = '';
+      }
+      renderOrbits();
+    }
+    async function pollProgress() {
+      if (!settings.url || !settings.token) return;
+      try {
+        const r = await _api3({ action: 'progress' });
+        if (r && r.ok) { renderProgress(r.progress); absorbActivity(r.activity); }
+      } catch (e) { }
+    }
+    // 처리가 3초 넘게 걸리면 2.5초마다 진행 상황 확인
+    let thinkSince = 0;
+    setInterval(() => {
+      if (busy) {
+        if (!thinkSince) thinkSince = Date.now();
+        if (Date.now() - thinkSince > 3000 && !progTimer) { pollProgress(); progTimer = setInterval(pollProgress, 2500); }
+      } else {
+        thinkSince = 0;
+        if (progTimer) { clearInterval(progTimer); progTimer = null; setTimeout(pollProgress, 600); }
+      }
+      renderOrbits();
+    }, 500);
+
+    /* ==========================================================
+       82·93. 타이핑 자막 + 자막 아래 음성 파형
+       ========================================================== */
+    let typeTimer = null;
+    const _showCaption4 = showCaption;
+    showCaption = function (text) {
+      _showCaption4(text);
+      const el = $('capText');
+      const full = el.textContent;
+      if (!full || !$('replyCap').classList.contains('show')) return;
+      clearInterval(typeTimer);
+      let i = 0;
+      el.textContent = '';
+      const stepN = Math.max(1, Math.ceil(full.length / 140));   // 긴 답은 여러 글자씩
+      typeTimer = setInterval(() => { i += stepN; el.textContent = full.slice(0, i); if (i >= full.length) clearInterval(typeTimer); }, 30);
+    };
+    (function addCapWave() {
+      const cv = document.createElement('canvas');
+      cv.className = 'cap-wave'; cv.id = 'capWave';
+      $('replyCap').insertBefore(cv, $('capMore'));
+      const cx = cv.getContext('2d');
+      (function loop() {
+        requestAnimationFrame(loop);
+        if (!$('replyCap').classList.contains('show') || document.hidden) return;
+        const w = cv.clientWidth, h = cv.clientHeight, d = Math.min(window.devicePixelRatio || 1, 2);
+        if (cv.width !== w * d) { cv.width = w * d; cv.height = h * d; }
+        cx.setTransform(d, 0, 0, d, 0, 0);
+        cx.clearRect(0, 0, w, h);
+        const col = getComputedStyle(document.body).getPropertyValue('--cyan').trim() || '#3fd0ff';
+        cx.strokeStyle = col; cx.lineWidth = 1.5; cx.globalAlpha = 0.8;
+        cx.beginPath();
+        const n = 96;
+        let data = null;
+        if (state === 'speaking' && analyser && !player.paused) { data = new Uint8Array(analyser.fftSize); analyser.getByteTimeDomainData(data); }
+        for (let i = 0; i <= n; i++) {
+          let v = 0;
+          if (data) v = (data[Math.floor(i / n * (data.length - 1))] - 128) / 128 * 2.2;
+          else if (state === 'speaking') v = Math.sin(i * 0.5 + performance.now() / 70) * Math.sin(i * 0.11 + performance.now() / 400) * 0.7;
+          const x = i / n * w, y = h / 2 + v * (h / 2 - 1);
+          if (i) cx.lineTo(x, y); else cx.moveTo(x, y);
+        }
+        cx.stroke();
+      })();
+    })();
+
+    /* ==========================================================
+       83. 오류 순간 화면 흔들림
+       ========================================================== */
+    const _showError4 = showError;
+    showError = function (title, cause, fix, detail, level) {
+      _showError4(title, cause, fix, detail, level);
+      if ((level || 'error') === 'error') {
+        document.body.classList.remove('glitch'); void document.body.offsetWidth; document.body.classList.add('glitch');
+        setTimeout(() => document.body.classList.remove('glitch'), 500);
+        tick('오류 감지: ' + title);
+      }
+    };
+
+    /* ==========================================================
+       84·85. 레이더 물결 + 3D 지구본
+       ========================================================== */
+    let prevUnread = null;
+    function checkRipples(d) {
+      const cu = d.clientUnread || {};
+      Object.keys(cu).forEach(name => {
+        const before = prevUnread ? (prevUnread[name] || 0) : 0;
+        if (cu[name] > before) {
+          const w = (worldData || []).find(x => String(x.clients).toLowerCase() === name.toLowerCase());
+          if (w) { ripples[w.city] = Date.now() + 90000; tick(name + ' 새 메일 ' + (cu[name] - before) + '건 감지'); if (prevUnread) sfx('card'); }
+        }
+      });
+      prevUnread = cu;
+    }
+    const gcv = $('globe');
+    const gctx = gcv ? gcv.getContext('2d') : null;
+    let globeRot = 127;
+    let globeVisible = true;
+    if (gcv && 'IntersectionObserver' in window) new IntersectionObserver(es => { globeVisible = es[0].isIntersecting; }).observe(gcv);
+    function setGlobe(on) {
+      fx4.globe = on;
+      document.body.classList.toggle('globe-on', on);
+      $('globeBtn').textContent = on ? '2D' : '3D';
+      store.set('jarvis_globe', on ? '1' : '0');
+    }
+    $('globeBtn').onclick = () => setGlobe(!fx4.globe);
+    setGlobe(fx4.globe);
+    let gLast = 0;
+    function globeLoop(ts) {
+      requestAnimationFrame(globeLoop);
+      if (!fx4.globe || !globeVisible || document.hidden || ts - gLast < 40) return;
+      gLast = ts;
+      const w = gcv.clientWidth, h = gcv.clientHeight, d = Math.min(window.devicePixelRatio || 1, 2);
+      if (!w) return;
+      if (gcv.width !== Math.round(w * d)) { gcv.width = Math.round(w * d); gcv.height = Math.round(h * d); }
+      const g = gctx;
+      g.setTransform(d, 0, 0, d, 0, 0);
+      g.clearRect(0, 0, w, h);
+      globeRot = (globeRot + 0.25) % 360;
+      const R = Math.min(w, h) * 0.44, cx = w / 2, cy = h / 2, R0 = Math.PI / 180, phi0 = 25 * R0, lam0 = globeRot * R0;
+      const proj = (lat, lon) => {
+        const p = lat * R0, l = lon * R0;
+        const cosc = Math.sin(phi0) * Math.sin(p) + Math.cos(phi0) * Math.cos(p) * Math.cos(l - lam0);
+        return { x: cx + R * Math.cos(p) * Math.sin(l - lam0), y: cy - R * (Math.cos(phi0) * Math.sin(p) - Math.sin(phi0) * Math.cos(p) * Math.cos(l - lam0)), v: cosc > 0 };
+      };
+      const grd = g.createRadialGradient(cx, cy, R * 0.2, cx, cy, R);
+      grd.addColorStop(0, 'rgba(63,208,255,0.10)'); grd.addColorStop(1, 'rgba(63,208,255,0.02)');
+      g.fillStyle = grd; g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = 'rgba(63,208,255,0.55)'; g.lineWidth = 1.2; g.stroke();
+      g.strokeStyle = 'rgba(63,208,255,0.2)'; g.lineWidth = 0.8;
+      const line = (pts) => { g.beginPath(); let pen = false; pts.forEach(p => { if (p.v) { if (pen) g.lineTo(p.x, p.y); else g.moveTo(p.x, p.y); pen = true; } else pen = false; }); g.stroke(); };
+      for (let lon = -180; lon < 180; lon += 30) line(Array.from({ length: 37 }, (_, i) => proj(-90 + i * 5, lon)));
+      for (let lat = -60; lat <= 60; lat += 30) line(Array.from({ length: 73 }, (_, i) => proj(lat, -180 + i * 5)));
+      const seoul = CITY_POS['서울'];
+      const colors = { on: '#4fffb0', lunch: '#ffb547', off: '#7fa6c4' };
+      (worldData || []).forEach(wd => {
+        const p = CITY_POS[wd.city]; if (!p) return;
+        const c = colors[workCode(wd)];
+        // 서울 → 도시 대권 항로
+        const pts = [];
+        for (let k = 0; k <= 40; k++) { const f = k / 40; pts.push(proj(seoul[0] + (p[0] - seoul[0]) * f + Math.sin(f * Math.PI) * 12, seoul[1] + (p[1] - seoul[1]) * f)); }
+        g.strokeStyle = c + '88'; g.lineWidth = 1; g.setLineDash([3, 3]); line(pts); g.setLineDash([]);
+        const q = proj(p[0], p[1]);
+        if (!q.v) return;
+        g.fillStyle = c; g.shadowColor = c; g.shadowBlur = 8;
+        g.beginPath(); g.arc(q.x, q.y, 3.5, 0, Math.PI * 2); g.fill(); g.shadowBlur = 0;
+        if (ripples[wd.city] > Date.now()) {
+          const k = (ts / 1600) % 1;
+          g.strokeStyle = c; g.globalAlpha = 1 - k; g.beginPath(); g.arc(q.x, q.y, 4 + k * 22, 0, Math.PI * 2); g.stroke(); g.globalAlpha = 1;
+        }
+        g.fillStyle = '#dff4ff'; g.font = '10px "Noto Sans KR", sans-serif';
+        g.fillText(wd.city, q.x + 6, q.y - 5);
+      });
+      const s = proj(seoul[0], seoul[1]);
+      if (s.v) { g.fillStyle = '#ffffff'; g.beginPath(); g.arc(s.x, s.y, 3, 0, Math.PI * 2); g.fill(); g.fillStyle = '#7fa6c4'; g.fillText('서울', s.x + 5, s.y + 12); }
+    }
+    if (gctx) requestAnimationFrame(globeLoop);
+
+    /* ==========================================================
+       89. 입체 효과 (PC 마우스 / 휴대폰 기울기)
+       ========================================================== */
+    function applyParallax(nx, ny) {   // nx, ny: -1 ~ 1
+      if (isWidget || document.body.classList.contains('mini')) return;
+      document.querySelectorAll('.col').forEach(c => { c.style.transform = 'translate(' + (-nx * 6).toFixed(1) + 'px,' + (-ny * 5).toFixed(1) + 'px)'; });
+      const r = document.querySelector('.center .reactor');
+      if (r) r.style.transform = 'translate(' + (nx * 5).toFixed(1) + 'px,' + (ny * 4).toFixed(1) + 'px)';
+    }
+    if (!isPhone) {
+      let pmT = 0;
+      document.addEventListener('mousemove', (e) => {
+        if (performance.now() - pmT < 40) return; pmT = performance.now();
+        applyParallax(e.clientX / window.innerWidth * 2 - 1, e.clientY / window.innerHeight * 2 - 1);
+      });
+    }
+    function startTilt() {
+      const go = () => {
+        window.addEventListener('deviceorientation', (e) => {
+          if (e.gamma == null) return;
+          applyParallax(Math.max(-1, Math.min(1, e.gamma / 25)), Math.max(-1, Math.min(1, (e.beta - 45) / 25)));
+        });
+        fx4.tilt = true;
+        $('cfgTilt').textContent = '기울기 효과 켜짐';
+        tick('기울기 입체 효과 시작');
+      };
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission().then(r => { if (r === 'granted') go(); else alert('기울기 사용이 허용되지 않았습니다. 사파리 설정에서 동작 및 방향 접근을 확인해 주세요.'); }).catch(() => {});
+      } else go();
+    }
+    $('cfgTilt').onclick = startTilt;
+
+    /* ==========================================================
+       91. 대기 중 잔잔한 기계음
+       ========================================================== */
+    let hum = null;
+    function updateHum() {
+      const want = fx4.hum && !isWidget && (state === 'standby' || state === 'listening' || state === 'thinking') && !speaking && !document.hidden;
+      try {
+        if (want && !hum) {
+          if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          if (audioCtx.state !== 'running') return;
+          const g = audioCtx.createGain(); g.gain.value = 0;
+          const o1 = audioCtx.createOscillator(); o1.type = 'sine'; o1.frequency.value = 55;
+          const o2 = audioCtx.createOscillator(); o2.type = 'triangle'; o2.frequency.value = 110.4;
+          const lfo = audioCtx.createOscillator(); lfo.frequency.value = 0.18;
+          const lg = audioCtx.createGain(); lg.gain.value = 0.004;
+          lfo.connect(lg).connect(g.gain);
+          o1.connect(g); o2.connect(g); g.connect(audioCtx.destination);
+          [o1, o2, lfo].forEach(o => o.start());
+          g.gain.linearRampToValueAtTime(0.009, audioCtx.currentTime + 1.5);
+          hum = { g, os: [o1, o2, lfo] };
+        } else if (!want && hum) {
+          const h = hum; hum = null;
+          h.g.gain.cancelScheduledValues(audioCtx.currentTime);
+          h.g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.6);
+          setTimeout(() => h.os.forEach(o => { try { o.stop(); } catch (e) { } }), 700);
+        }
+      } catch (e) { }
+    }
+    setInterval(updateHum, 1000);
+
+    /* ==========================================================
+       94. 시간대별 배경색
+       ========================================================== */
+    function applyTint() {
+      const h = new Date().getHours();
+      const c = h >= 5 && h < 9 ? '#1fd6c4' : h >= 9 && h < 17 ? '#2a8cff' : h >= 17 && h < 20 ? '#8a5cff' : '#0d2a7a';
+      document.documentElement.style.setProperty('--tintc', c);
+    }
+    applyTint();
+    setInterval(applyTint, 5 * 60000);
+
+    /* ==========================================================
+       95. 긴급 경보 (중요도 상 고객의 긴급 메일)
+       ========================================================== */
+    let urgentNow = [];
+    function ackList() { try { return JSON.parse(store.get('jarvis_urgent_ack', '[]')); } catch (e) { return []; } }
+    function renderUrgent(list) {
+      const ack = ackList();
+      const fresh = (list || []).filter(u => ack.indexOf(u.id) < 0);
+      const isNew = fresh.some(u => !urgentNow.some(x => x.id === u.id));
+      urgentNow = fresh;
+      $('urgentFrame').classList.toggle('show', fresh.length > 0);
+      $('urgentList').innerHTML = '';
+      fresh.forEach(u => { const li = document.createElement('li'); li.textContent = '[' + u.client + '] ' + u.subject; $('urgentList').appendChild(li); });
+      if (isNew && fresh.length) { sfx('error'); tick('긴급 메일 감지: ' + fresh[0].client); }
+    }
+    $('urgentAck').onclick = () => {
+      const ack = ackList().concat(urgentNow.map(u => u.id)).slice(-100);
+      store.set('jarvis_urgent_ack', JSON.stringify(ack));
+      renderUrgent([]);
+    };
+    $('urgentReport').onclick = () => {
+      const c = urgentNow[0] ? urgentNow[0].client : 'Sony';
+      $('urgentAck').click();
+      sendCommand(c + ' 긴급 메일 내용 요약하고 회신 방향 알려줘');
+    };
+
+    /* ==========================================================
+       96. 할 일 완료 효과
+       ========================================================== */
+    function doneBurst() {
+      const b = $('doneBurst');
+      b.classList.remove('show'); void b.offsetWidth; b.classList.add('show');
+      setTimeout(() => b.classList.remove('show'), 1700);
+      const core = centerOf($('reactor'));
+      for (let i = 0; i < 24; i++) { const a = i / 24 * Math.PI * 2; spawnFlow(core, { x: core.x + Math.cos(a) * 320, y: core.y + Math.sin(a) * 320 }, 1, '79,255,176'); }
+      try {
+        if (fx3.sfx && audioCtx) [784, 988, 1175, 1568].forEach((f, i) => {
+          const o = audioCtx.createOscillator(), g = audioCtx.createGain(), t = audioCtx.currentTime + i * 0.08;
+          o.frequency.value = f; g.gain.setValueAtTime(0.07, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+          o.connect(g).connect(audioCtx.destination); o.start(t); o.stop(t + 0.26);
+        });
+      } catch (e) { }
+    }
+
+    /* ----- 명령 결과 감싸기: 작업 기록, 완료 효과 ----- */
+    const _api4 = api;
+    api = async function (payload) {
+      const t0 = performance.now();
+      if (payload && payload.action === 'chat' && !payload.silent) { tick('명령 접수: ' + String(payload.message).slice(0, 24)); flowOut(3); }
+      const r = await _api4(payload);
+      if (payload && payload.action === 'chat' && r) {
+        tick(r.ok ? '응답 완료 ' + ((performance.now() - t0) / 1000).toFixed(1) + '초' : '응답 오류');
+        (r.tools || []).forEach(n => tick('도구 실행: ' + n));
+        if ((r.tools || []).some(n => /update_task_status|confirm_suggested_tasks/.test(n)) && /완료|등록/.test(r.reply || '')) doneBurst();
+      }
+      if (payload && payload.action === 'tts' && r && r.ok) tick('목소리 생성 완료');
+      return r;
+    };
+
+    /* ==========================================================
+       97. 화면 보호 모드
+       ========================================================== */
+    let lastInput = Date.now();
+    ['pointerdown', 'pointermove', 'keydown', 'touchstart', 'wheel'].forEach(ev => document.addEventListener(ev, () => { lastInput = Date.now(); if (document.body.classList.contains('saver-on')) exitSaver(); }, { passive: true }));
+    function svUpdate() {
+      const d = new Date();
+      $('svTime').textContent = d.toTimeString().slice(0, 5);
+      $('svDate').textContent = d.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'long' });
+      const one = lastDash && lastDash.todayOne;
+      $('svNext').textContent = nextEventText() + (one && one.one ? '  ·  오늘의 핵심: ' + one.one : '');
+    }
+    function exitSaver() { document.body.classList.remove('saver-on'); tick('화면 보호 해제'); }
+    function nextEventText() {
+      const evs = (lastDash && lastDash.events) || [];
+      const now = new Date().toTimeString().slice(0, 5);
+      const n = evs.find(e => e.time !== '종일' && e.time >= now);
+      return n ? '다음 일정 ' + n.time + ' ' + n.title : '오늘 남은 일정 없음';
+    }
+    setInterval(() => {
+      const on = document.body.classList.contains('saver-on');
+      if (on) {
+        if (state === 'listening' || state === 'thinking' || state === 'speaking' || busy) { exitSaver(); return; }
+        svUpdate();
+        return;
+      }
+      const idle = Date.now() - lastInput > 10 * 60000;
+      const blocked = busy || speaking || state === 'listening' || state === 'thinking' || document.body.classList.contains('console-open') || document.body.classList.contains('modal-open') || isWidget;
+      if (fx4.saver && idle && !blocked) { svUpdate(); document.body.classList.add('saver-on'); tick('화면 보호 모드'); }
+    }, 1000);
+    $('saver').addEventListener('click', exitSaver);
+
+    /* ==========================================================
+       98. 들은 단어가 코어 주변에 떠오름
+       ========================================================== */
+    let heardPrev = '';
+    const _showHeard4 = showHeard;
+    showHeard = function (t) {
+      _showHeard4(t);
+      const s = String(t || '').trim();
+      if (!s) return;
+      const prevWords = heardPrev && s.indexOf(heardPrev) === 0 ? heardPrev.split(/\s+/).length : 0;
+      const words = s.split(/\s+/);
+      heardPrev = s;
+      words.slice(prevWords).slice(-3).forEach((w, i) => {
+        if (!w || w.length > 14) return;
+        const el = document.createElement('span');
+        el.className = 'hword';
+        el.textContent = w;
+        const a = (-150 + Math.random() * 120) * Math.PI / 180;   // 코어 위쪽 반원에 표시
+        el.style.left = (50 + Math.cos(a) * 36) + '%';
+        el.style.top = (50 + Math.sin(a) * 36) + '%';
+        el.style.animationDelay = (i * 0.12) + 's';
+        el.addEventListener('animationend', () => el.remove());
+        $('heardWords').appendChild(el);
+      });
+    };
+    const _setState4 = setState;
+    setState = function (s, label) { if (s !== 'listening') heardPrev = ''; _setState4(s, label); };
+
+    /* ==========================================================
+       88. 패널 조립 연출 (부팅이 끝나는 순간)
+       ========================================================== */
+    (function assembleAfterBoot() {
+      const boot = $('boot');
+      if (!boot || boot.classList.contains('hide')) return;
+      const run = () => {
+        const els = [document.querySelector('.topbar')].concat(Array.from(document.querySelectorAll('.col .panel')));
+        els.forEach((el, i) => { if (!el) return; el.style.animationDelay = (i * 0.09) + 's'; el.classList.add('assemble'); setTimeout(() => { el.classList.remove('assemble'); el.style.animationDelay = ''; }, 900 + i * 90); });
+        setTimeout(() => flowIn(1), 700);
+        tick('시스템 패널 조립 완료');
+      };
+      new MutationObserver((m, ob) => { if (boot.classList.contains('hide')) { ob.disconnect(); run(); } }).observe(boot, { attributes: true });
+    })();
+
+    /* ==========================================================
+       64. 오늘의 한 장 + 패널 갱신 연결
+       ========================================================== */
+    function renderTodayOne(o) {
+      const box = $('todayOne');
+      if (!o || !o.one) { box.classList.remove('show'); return; }
+      box.innerHTML = '';
+      const h = document.createElement('h4'); h.textContent = "TODAY'S ONE";
+      const b = document.createElement('b'); b.textContent = o.one;
+      const s = document.createElement('small'); s.textContent = (o.why || '') + (o.prep && o.prep.length ? ' · 준비: ' + o.prep.join(', ') : '');
+      box.append(h, b, s);
+      box.classList.add('show');
+    }
+    const _renderDashboard4 = renderDashboard;
+    renderDashboard = function (d) {
+      _renderDashboard4(d);
+      ROLL_IDS.forEach(id => rollText($(id)));
+      scanPanels();
+      flowIn(2);
+      tick('패널 데이터 갱신');
+      pendingJobs = d.pendingJobs || 0;
+      renderProgress(d.progress || null);
+      absorbActivity(d.activity);
+      try { checkRipples(d); renderRadar(); } catch (e) { }
+      renderUrgent(d.urgent);
+      renderTodayOne(d.todayOne);
+    };
+
+    /* ----- 설정 창: 배경 효과, 기계음, 화면 보호 ----- */
+    const _openSettings5 = openSettings;
+    openSettings = function () {
+      _openSettings5();
+      $('cfgRain').value = fx4.rain; $('cfgHum').value = fx4.hum ? '1' : '0'; $('cfgSaver').value = fx4.saver ? '1' : '0';
+    };
+    $('settingsBtn').onclick = openSettings;
+    $('cfgSave').addEventListener('click', () => {
+      fx4.rain = $('cfgRain').value; fx4.hum = $('cfgHum').value === '1'; fx4.saver = $('cfgSaver').value === '1';
+      store.set('jarvis_rain', fx4.rain); store.set('jarvis_hum', fx4.hum ? '1' : '0'); store.set('jarvis_saver', fx4.saver ? '1' : '0');
+    });
+    if (lastDash) renderDashboard(lastDash);   // 이미 받은 데이터가 있으면 연출까지 다시 그림
   </script>
 
 </body>
