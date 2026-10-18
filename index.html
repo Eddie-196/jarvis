@@ -715,9 +715,9 @@
     @keyframes holoIn { from { opacity: 0; transform: translateY(14px) scale(.96); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
 
     /* ----- 고객사 레이더 맵 ----- */
-    .radar-map { width: 100%; aspect-ratio: 1.6; display: block; }
+    .radar-map { width: 100%; aspect-ratio: 360 / 230; display: block; }
     .radar-map .blip { animation: blipPulse 2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
-    .radar-map .sweep { transform-origin: 160px 100px; animation: spin 6s linear infinite; }
+    .radar-map .sweep { transform-origin: 180px 115px; animation: spin 6s linear infinite; }
     @keyframes blipPulse { 50% { transform: scale(1.6); opacity: .5; } }
     .radar-legend { display: flex; gap: 12px; font-size: 11px; color: var(--muted); margin-top: 4px; flex-wrap: wrap; }
     .radar-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
@@ -765,6 +765,49 @@
       .open-console { display: none; }                  /* 휴대폰은 하단 바의 입력 버튼 사용 */
       .kanban { grid-template-columns: repeat(2, 1fr); }
       .cards { width: 100%; }
+    }
+
+    /* ==========================================================
+       12. 휴대폰 화면 다듬기 (글자 줄바꿈, 명령 창 전체 화면, 하단 바 겹침 방지)
+       ========================================================== */
+    @media (max-width: 640px) {
+      /* 상단 로고: 부제목이 두 줄로 깨지지 않게 */
+      .logo { font-size: 17px; letter-spacing: 3px; white-space: nowrap; }
+      .logo span { font-size: 8.5px; letter-spacing: 1.2px; white-space: nowrap; }
+      .status { white-space: nowrap; font-size: 12px; }
+      .ctrl { font-size: 11px; white-space: nowrap; }
+      .panel-title { white-space: nowrap; gap: 8px; }
+      .panel-title small { overflow: hidden; text-overflow: ellipsis; }
+      .hint { font-size: 12px; padding: 0 6px; word-break: keep-all; }
+      .reply-cap { width: 100%; }
+      .reply-cap p { font-size: 15px; }
+      .world .w-time { font-size: 18px; }
+
+      /* 명령 창: 휴대폰에서는 화면 전체를 쓰고, 입력칸이 하단 바에 가리지 않게 */
+      body.console-open .mobile-bar, body.modal-open .mobile-bar { display: none; }
+      body.console-open { overflow: hidden; }
+      .console-bg { padding: 0; align-items: stretch; }
+      .console {
+        width: 100%;
+        height: 100vh;
+        height: 100dvh;                       /* 사파리 주소창 높이를 뺀 실제 화면 높이 */
+        border-radius: 0;
+        padding: calc(12px + env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom));
+      }
+      .console::before, .console::after { display: none; }
+      .console-head { flex-wrap: nowrap; }
+      .console-head .panel-title { font-size: 12px; letter-spacing: 2px; }
+      .console-head .panel-title small { display: none; }   /* "자비스 명령 창" 부제 숨김 */
+      .console-state { white-space: nowrap; max-width: 34vw; overflow: hidden; text-overflow: ellipsis; font-size: 11px; }
+      #consoleClose { white-space: nowrap; padding: 6px 12px; }
+      .log { padding-right: 2px; }
+      .msg { max-width: 100%; font-size: 15px; word-break: keep-all; overflow-wrap: anywhere; }
+      .composer { gap: 6px; }
+      .composer textarea { font-size: 16px; min-height: 46px; padding: 12px; }   /* 16px 미만이면 아이폰이 화면을 확대함 */
+      .composer .btn { height: 46px; padding: 0 12px; white-space: nowrap; }
+
+      /* 설정 창: 화면 안에서 스크롤 */
+      .modal { max-height: calc(100dvh - 24px); overflow-y: auto; }
     }
   </style>
 </head>
@@ -983,7 +1026,7 @@
         <!-- 고객사 레이더 맵: 서울 기준 방향·거리, 점 색 = 지금 연락 가능 여부 -->
         <section class="panel">
           <div class="panel-title">CLIENT RADAR <small>서울 기준</small></div>
-          <svg class="radar-map" id="radarMap" viewBox="0 0 320 200"></svg>
+          <svg class="radar-map" id="radarMap" viewBox="0 0 360 230"></svg>
           <div class="radar-legend"><span><i style="background:#4fffb0"></i>근무 중</span><span><i style="background:#ffb547"></i>점심</span><span><i style="background:#7fa6c4"></i>근무 외·휴일</span></div>
         </section>
 
@@ -2530,7 +2573,13 @@
     }
 
     /* ----- 고객사 레이더 맵 ----- */
-    const CITY_POS = { '도쿄': [35.68, 139.69], '이스탄불': [41.01, 28.98], '서울': [37.57, 126.98] };
+    const CITY_POS = { '도쿄': [35.68, 139.69], '이스탄불': [41.01, 28.98], '런던': [51.51, -0.13], '워싱턴 D.C.': [38.91, -77.04], '멕시코시티': [19.43, -99.13], '서울': [37.57, 126.98] };
+    // 서버를 아직 새 버전으로 배포하지 않았어도 세계 시계에 보이도록 화면에서 기본 도시를 보충 (공휴일 정보는 서버 배포 후 표시)
+    const EXTRA_CITIES = [
+      { city: '런던', tz: 'Europe/London', country: 'GB', clients: '영국', status: '', next_holidays: [] },
+      { city: '워싱턴 D.C.', tz: 'America/New_York', country: 'US', clients: '미국', status: '', next_holidays: [] },
+      { city: '멕시코시티', tz: 'America/Mexico_City', country: 'MX', clients: '멕시코', status: '', next_holidays: [] }
+    ];
     function bearingKm(a, b) {
       const R = Math.PI / 180, [la1, lo1] = a, [la2, lo2] = b;
       const y = Math.sin((lo2 - lo1) * R) * Math.cos(la2 * R);
@@ -2548,27 +2597,38 @@
     function renderRadar() {
       const svg = $('radarMap');
       if (!svg) return;
-      const cx = 160, cy = 100;
+      const cx = 180, cy = 115;
       let html = '';
-      [30, 60, 90].forEach(r => { html += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="rgba(63,208,255,.18)" stroke-dasharray="2 4"/>'; });
-      html += '<line x1="' + (cx - 95) + '" y1="' + cy + '" x2="' + (cx + 95) + '" y2="' + cy + '" stroke="rgba(63,208,255,.12)"/><line x1="' + cx + '" y1="5" x2="' + cx + '" y2="195" stroke="rgba(63,208,255,.12)"/>';
-      html += '<g class="sweep"><path d="M' + cx + ' ' + cy + ' L' + (cx + 92) + ' ' + cy + ' A92 92 0 0 0 ' + (cx + 92 * Math.cos(-0.5)) + ' ' + (cy + 92 * Math.sin(-0.5)) + ' Z" fill="rgba(63,208,255,.10)"/></g>';
+      [34, 68, 102].forEach(r => { html += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="rgba(63,208,255,.18)" stroke-dasharray="2 4"/>'; });
+      html += '<line x1="' + (cx - 106) + '" y1="' + cy + '" x2="' + (cx + 106) + '" y2="' + cy + '" stroke="rgba(63,208,255,.12)"/><line x1="' + cx + '" y1="8" x2="' + cx + '" y2="222" stroke="rgba(63,208,255,.12)"/>';
+      html += '<g class="sweep"><path d="M' + cx + ' ' + cy + ' L' + (cx + 104) + ' ' + cy + ' A104 104 0 0 0 ' + (cx + 104 * Math.cos(-0.5)).toFixed(1) + ' ' + (cy + 104 * Math.sin(-0.5)).toFixed(1) + ' Z" fill="rgba(63,208,255,.10)"/></g>';
       html += '<circle cx="' + cx + '" cy="' + cy + '" r="4" fill="#dff4ff"/><text x="' + cx + '" y="' + (cy + 15) + '" font-size="9" fill="#7fa6c4" text-anchor="middle">서울</text>';
       const colors = { on: '#4fffb0', lunch: '#ffb547', off: '#7fa6c4' };
+      const labels = [];
       (worldData || []).forEach(w => {
         const p = CITY_POS[w.city];
         if (!p) return;
         const g = bearingKm(CITY_POS['서울'], p);
-        const r = Math.min(88, 30 + 30 * Math.log10(g.km / 300));   // 거리는 눈금 간격을 줄인 로그 비율
+        const r = Math.min(100, 34 + 30 * Math.log10(g.km / 300));   // 거리는 눈금 간격을 줄인 로그 비율
         const x = cx + r * Math.sin(g.brg), y = cy - r * Math.cos(g.brg);
         const c = colors[workCode(w)];
-        const t = localParts(w.tz).time;
         html += '<line x1="' + cx + '" y1="' + cy + '" x2="' + x.toFixed(1) + '" y2="' + y.toFixed(1) + '" stroke="' + c + '" stroke-opacity=".35" stroke-dasharray="3 3"/>';
-        html += '<circle class="blip" cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="5" fill="' + c + '" style="filter:drop-shadow(0 0 5px ' + c + ')"/>';
-        const anchor = x < cx ? 'end' : 'start';          // 글자는 바깥쪽으로
-        const tx = x < cx ? x - 9 : x + 9;
-        html += '<text x="' + tx.toFixed(1) + '" y="' + (y - 2).toFixed(1) + '" font-size="10" fill="#dff4ff" text-anchor="' + anchor + '">' + w.clients + ' · ' + w.city + '</text>';
-        html += '<text x="' + tx.toFixed(1) + '" y="' + (y + 10).toFixed(1) + '" font-size="9" fill="' + c + '" text-anchor="' + anchor + '" font-family="Share Tech Mono">' + t + ' · ' + Math.round(g.km).toLocaleString() + 'km</text>';
+        html += '<circle class="blip" cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="4.5" fill="' + c + '" style="filter:drop-shadow(0 0 5px ' + c + ')"/>';
+        // 고객사가 있는 도시는 "Sony · 도쿄", 나머지는 도시 이름만
+        const name = /[A-Za-z]/.test(w.clients || '') ? w.clients + ' · ' + w.city : w.city;
+        labels.push({ x, y, ly: y, c, name, sub: localParts(w.tz).time + ' · ' + (Math.round(g.km / 100) * 100).toLocaleString() + 'km', left: x < cx });
+      });
+      // 글자 겹침 방지: 같은 쪽(왼쪽/오른쪽) 이름표끼리 세로 간격을 24 이상 띄움
+      [true, false].forEach(side => {
+        const arr = labels.filter(l => l.left === side).sort((a, b) => a.ly - b.ly);
+        for (let i = 1; i < arr.length; i++) if (arr[i].ly - arr[i - 1].ly < 24) arr[i].ly = arr[i - 1].ly + 24;
+      });
+      labels.forEach(l => {
+        const anchor = l.left ? 'end' : 'start';          // 글자는 바깥쪽으로
+        const tx = l.left ? l.x - 9 : l.x + 9;
+        if (Math.abs(l.ly - l.y) > 3) html += '<line x1="' + l.x.toFixed(1) + '" y1="' + l.y.toFixed(1) + '" x2="' + (tx + (l.left ? 3 : -3)).toFixed(1) + '" y2="' + (l.ly - 4).toFixed(1) + '" stroke="' + l.c + '" stroke-opacity=".4"/>';
+        html += '<text x="' + tx.toFixed(1) + '" y="' + (l.ly - 2).toFixed(1) + '" font-size="10" fill="#dff4ff" text-anchor="' + anchor + '">' + l.name + '</text>';
+        html += '<text x="' + tx.toFixed(1) + '" y="' + (l.ly + 9).toFixed(1) + '" font-size="8.5" fill="' + l.c + '" text-anchor="' + anchor + '" font-family="Share Tech Mono, monospace">' + l.sub + '</text>';
       });
       svg.innerHTML = html;
     }
@@ -2615,6 +2675,7 @@
     let lastDash = null;
     const _renderDashboard3 = renderDashboard;
     renderDashboard = function (d) {
+      if (d && d.world) EXTRA_CITIES.forEach(c => { if (!d.world.some(w => w.city === c.city)) d.world.push(c); });
       _renderDashboard3(d);
       lastDash = d;
       try { renderRadar(); } catch (e) { }
@@ -2672,6 +2733,23 @@
           .catch(() => {});
       }
     });
+    /* ----- 휴대폰: 명령 창·설정 창이 열리면 하단 바 숨김, 입력 안내 문구 짧게 ----- */
+    const _openConsole4 = openConsole, _closeConsole4 = closeConsole, _closeSettings4 = closeSettings;
+    openConsole = function (f) { document.body.classList.add('console-open'); _openConsole4(f); };
+    closeConsole = function () { document.body.classList.remove('console-open'); _closeConsole4(); };
+    closeSettings = function () { document.body.classList.remove('modal-open'); _closeSettings4(); };
+    const _openSettings4 = openSettings;
+    openSettings = function () { document.body.classList.add('modal-open'); _openSettings4(); };
+    $('settingsBtn').onclick = openSettings;
+    $('cfgClose').onclick = closeSettings;
+    $('consoleBtn').onclick = () => openConsole(true);
+    $('openConsoleBtn').onclick = () => openConsole(true);
+    $('consoleClose').onclick = closeConsole;
+    $('mbConsole').onclick = () => openConsole(true);
+    $('capMore').onclick = () => { hideCaption(); openConsole(false); };
+    if (window.matchMedia('(max-width: 640px)').matches) inputEl.placeholder = '자비스에게 명령하기';
+    // 첫 패널 데이터가 이 확장 기능이 준비되기 전에 먼저 도착한 경우, 레이더·진행 보드까지 다시 그림
+    if (!lastDash && $('evCount').textContent !== '-') loadDashboard();
   </script>
 
 </body>
