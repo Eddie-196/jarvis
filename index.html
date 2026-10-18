@@ -944,6 +944,16 @@
     body.widget .reply-cap p { font-size: 13px; }
     body.widget .err-pop { position: fixed; top: 60px; left: 8px; right: 8px; width: auto; }
 
+
+    /* PC 위젯: 작은 창에 맞춘 배치 */
+    body.widget { overflow-x: hidden; }
+    body.widget .app { padding-bottom: 40px; }   /* 하단 작업 기록 띠에 가리지 않게 */
+    body.widget .center { gap: 8px; }
+    body.widget .w-next { font-size: 13px; color: var(--cyan); text-align: center; }
+    body.widget .today-one, body.widget .reply-cap, body.widget .cards { width: 100%; }
+    body.widget .reply-cap p { max-height: 120px; overflow-y: auto; }
+    body.widget .ticker { height: 26px; font-size: 11px; bottom: 0 !important; left: 0 !important; right: 0 !important; border-radius: 0 !important; }
+
     @media (max-width: 640px) {
       .ticker { bottom: calc(84px + env(safe-area-inset-bottom)); left: 12px; right: 12px; border-radius: 10px; border: 1px solid var(--line); height: 26px; font-size: 11px; }
       body.console-open .ticker, body.modal-open .ticker { display: none; }
@@ -1170,10 +1180,6 @@
           </div>
         </section>
 
-        <section class="panel">
-          <div class="panel-title">GLOBAL LINK <small>지금 연락 가능?</small></div>
-          <ul class="world" id="worldList"><li class="empty">연결 후 표시됩니다</li></ul>
-        </section>
 
         <!-- 고객사 레이더 맵: 서울 기준 방향·거리, 점 색 = 지금 연락 가능 여부 -->
         <section class="panel">
@@ -1810,7 +1816,7 @@
     }
     function renderWorld() {
       const ul = $('worldList');
-      if (!worldData.length) return;
+      if (!ul || !worldData.length) return;   // 세계 시계 패널은 삭제됨 (시각은 고객사 레이더에 표시)
       ul.innerHTML = '';
       worldData.forEach(w => {
         const t = localParts(w.tz);
@@ -2981,6 +2987,9 @@
       try { if (wakeOn) { stopWake(); wakeOn = false; } } catch (e) { }
       settings.wakeAlways = false;
       const b = $('boot'); if (b) b.remove();
+      STATE_TEXT.idle = ['READY', '코어를 눌러 말하기'];   // 위젯은 호출어 대기가 없으므로 "준비됨"으로 표시
+      const wn = document.createElement('div'); wn.className = 'w-next'; wn.id = 'wNext';
+      $('progLabel').after(wn);
       backToRest();
     }
 
@@ -3620,6 +3629,7 @@
       try { checkRipples(d); renderRadar(); } catch (e) { }
       renderUrgent(d.urgent);
       renderTodayOne(d.todayOne);
+      if (isWidget && $('wNext')) $('wNext').textContent = nextEventText();
     };
 
     /* ----- 설정 창: 배경 효과, 기계음, 화면 보호 ----- */
