@@ -992,8 +992,6 @@
     @property --ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
     .panel.p3d { transition: transform .18s ease-out, box-shadow .25s; transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateZ(0); will-change: transform; }
     .panel.p3d:hover { box-shadow: 0 18px 40px rgba(0, 0, 0, .45), 0 0 34px var(--glow), inset 0 0 26px rgba(63, 208, 255, .1); z-index: 2; }
-    .panel.p3d:hover { background: linear-gradient(160deg, var(--panel-strong), var(--panel)) padding-box, conic-gradient(from var(--ang), transparent 0 70%, var(--cyan) 80%, var(--teal) 86%, transparent 92%) border-box; border-color: transparent; animation: edgeSpin 3.2s linear infinite; }
-    @keyframes edgeSpin { to { --ang: 360deg; } }
     .panel-title { position: relative; overflow: hidden; }
     .panel-title::after { content: ''; position: absolute; top: 0; bottom: 0; width: 40%; left: -60%; background: linear-gradient(90deg, transparent, rgba(150, 230, 255, .25), transparent); animation: titleSweep 7s ease-in-out infinite; pointer-events: none; }
     @keyframes titleSweep { 0%, 70% { left: -60%; } 100% { left: 130%; } }
@@ -1011,7 +1009,7 @@
     body[data-state="thinking"] .gyro i { animation-duration: 2.4s, 3s, 4s; border-color: rgba(255, 200, 90, .45); }
     body[data-state="speaking"] .gyro i { animation-duration: 4s, 5s, 6s; }
 
-    @media (prefers-reduced-motion: reduce) { .holo-floor, .gyro i, .panel-title::after, .panel.p3d:hover { animation: none !important; } }
+    @media (prefers-reduced-motion: reduce) { .holo-floor, .gyro i, .panel-title::after { animation: none !important; } }
     body.mini .holo-floor, body.mini .holo-horizon, body.night .holo-floor { display: none; }
 
     /* --- 파이프라인: 한 줄 요약 카드 --- */
@@ -1099,6 +1097,133 @@
     /* --- 레이더: 시간 크게 --- */
     .radar-map text.rt { font-family: var(--mono); font-weight: 700; paint-order: stroke; stroke: rgba(2, 12, 24, .85); stroke-width: 3px; }
     .radar-map text.rn { paint-order: stroke; stroke: rgba(2, 12, 24, .85); stroke-width: 3px; }
+
+    /* ==========================================================
+       96. STARK 스타일 (검은 바탕 + 청록 선 그림 · 터미널 느낌)
+           body.stark 일 때만 적용 → 설정에서 '기본'으로 되돌릴 수 있음
+       ========================================================== */
+    body:not(.stark) .stark-only { display: none !important; }
+    body.stark .classic-only { display: none !important; }
+    body.stark {
+      --bg: #010607; --bg-2: #021214;
+      --panel: rgba(0, 22, 24, 0.30); --panel-strong: rgba(0, 30, 32, 0.38);
+      --line: rgba(20, 232, 232, 0.32); --line-strong: rgba(60, 255, 255, 0.75);
+      --text: #c8fbfb; --muted: #5fa3a6;
+      --cyan: #14e8e8; --teal: #5ffcff; --glow: rgba(20, 232, 232, 0.35);
+      --radius: 0px;
+      background: radial-gradient(ellipse at 50% 40%, #04282b 0%, #021112 38%, #010607 78%);
+    }
+    body.stark::before { content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image: linear-gradient(rgba(20, 232, 232, .045) 1px, transparent 1px), linear-gradient(90deg, rgba(20, 232, 232, .045) 1px, transparent 1px);
+      background-size: 34px 34px; }
+    body.stark .holo-floor, body.stark .holo-horizon { display: none; }
+    /* 패널: 채우기 없이 얇은 선 + 비스듬히 잘린 모서리 */
+    body.stark .panel { border-radius: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none;
+      clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+      background: linear-gradient(180deg, rgba(20, 232, 232, .06), rgba(0, 0, 0, 0) 40%); }
+    body.stark .panel.p3d:hover { box-shadow: none; background: linear-gradient(180deg, rgba(20, 232, 232, .10), rgba(0, 0, 0, 0) 50%); }
+    body.stark .panel-title { font-family: var(--tech); font-style: italic; font-weight: 700; font-size: 13px; letter-spacing: 2.5px; color: var(--cyan);
+      text-shadow: 0 0 8px rgba(20, 232, 232, .6); border-bottom: 1px solid rgba(20, 232, 232, .25); padding-bottom: 6px; }
+    body.stark .panel-title small { font-style: normal; letter-spacing: 0; }
+    body.stark .mem-cell, body.stark .kcol, body.stark .ship-list li.ship, body.stark .dt-item { border-radius: 0; }
+    body.stark .ship-list li.ship { background: transparent; border-color: rgba(20, 232, 232, .25); font-family: var(--mono); }
+    body.stark .ev-list, body.stark .due-list, body.stark .sys { font-family: var(--mono); }
+    body.stark .hbtn, body.stark .btn, body.stark .chip { border-radius: 2px; }
+    body.stark .dt { clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px); background: rgba(0, 12, 14, .96); }
+    body.stark .modal { background: rgba(0, 12, 14, .96); }
+
+    /* 상단: 큰 비스듬한 날짜 (월 / 요일 / 일자 고리) */
+    .stark-date { display: flex; align-items: center; gap: 10px; }
+    .stark-date .sd-words { font-family: var(--tech); font-style: italic; font-weight: 700; color: var(--cyan); line-height: .95; text-shadow: 0 0 10px rgba(20, 232, 232, .7); transform: skewX(-8deg); }
+    .stark-date .sd-month { font-size: 30px; letter-spacing: 1px; }
+    .stark-date .sd-wday { font-size: 22px; letter-spacing: 1px; margin-top: 2px; }
+    .sd-ring { position: relative; width: 58px; height: 58px; }
+    .sd-ring svg { width: 100%; height: 100%; }
+    .sd-ring b { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--tech); font-size: 20px; color: #dfffff; text-shadow: 0 0 8px var(--cyan); }
+    body.stark .topbar .logo { font-size: 13px; opacity: .8; }
+    @media (min-width: 901px) { body.stark .topbar { grid-template-columns: auto 1fr auto 1fr; } body.stark .topbar .logo { padding-left: 8px; } }
+    @media (max-width: 900px) { body.stark .stark-date { display: none !important; } }
+
+    /* 오른쪽: 큰 디지털 시계 + 달력 */
+    .sk-clock { display: flex; align-items: center; gap: 14px; }
+    .sk-rings { position: relative; width: 92px; height: 92px; flex: none; }
+    .sk-rings svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+    .sk-time { font-family: var(--tech); font-style: italic; font-weight: 700; font-size: 46px; color: var(--cyan); text-shadow: 0 0 14px rgba(20, 232, 232, .75); letter-spacing: 1px; transform: skewX(-6deg); }
+    .sk-time small { font-size: 16px; color: var(--teal); margin-left: 4px; }
+    .sk-cal { margin-top: 10px; font-family: var(--mono); font-size: 12px; }
+    .sk-cal .cap { text-align: center; color: var(--cyan); letter-spacing: 2px; margin-bottom: 4px; }
+    .sk-cal .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px 0; text-align: center; color: #9be9ea; }
+    .sk-cal .grid span.h { color: var(--muted); }
+    .sk-cal .grid span.sun { color: #ff7b8a; }
+    .sk-cal .grid span.today { color: #000; background: var(--cyan); box-shadow: 0 0 10px var(--cyan); font-weight: 700; }
+    .sk-cal .grid span.dim { opacity: .25; }
+    .sk-loc { margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(20, 232, 232, .25); font-family: var(--mono); font-size: 12px; color: var(--teal); text-align: right; }
+
+    /* 가운데 아래: 반원 게이지 (MAIL / TASK / SHIP / BABY) */
+    .sk-gauges { display: flex; justify-content: center; gap: 22px; margin-top: 4px; flex-wrap: wrap; }
+    .sk-g { width: 112px; text-align: center; cursor: default; }
+    .sk-g svg { width: 112px; height: 64px; display: block; }
+    .sk-g .lb { font-family: var(--tech); font-style: italic; font-weight: 700; font-size: 17px; color: var(--cyan); letter-spacing: 1px; text-shadow: 0 0 8px rgba(20, 232, 232, .6); transform: skewX(-8deg); margin-top: -2px; }
+    .sk-g .vl { font-family: var(--mono); font-size: 12px; color: var(--teal); }
+    .sk-g path.fill { transition: stroke-dashoffset .8s ease; filter: drop-shadow(0 0 4px var(--cyan)); }
+    body.stark .center .radar, body.stark .center .chevs { display: none; }
+
+    /* ==========================================================
+       97. STARK 코어 연출: ① 하이퍼 코어 ② 배경 지구본 ③ 필름 분해도
+           ④ 데이터 궤도 ⑤ 생각 중 신경망 구
+       ========================================================== */
+    .hyper, .data-orbit, .neural-sphere, .bg-globe { display: none; }
+    body.stark .hyper { display: block; position: absolute; inset: 0; pointer-events: none; }
+    body.stark #reactorSvg { position: relative; z-index: 2; }
+    body.stark .hyper svg { width: 100%; height: 100%; overflow: visible; }
+    body.stark #reactorSvg > *:not(defs):not(.core-label):not(.core-sub) { display: none; }
+    body.stark .reactor .gyro, body.stark .reactor .neural, body.stark .reactor .orbits { display: none; }
+    body.stark .reactor { filter: drop-shadow(0 0 22px rgba(20, 232, 232, .35)); }
+    body.stark .core-label { fill: #e8ffff; font-family: var(--tech); letter-spacing: 4px; }
+    body.stark .core-sub { fill: var(--teal); }
+    .hy-spin { transform-origin: 200px 200px; transform-box: view-box; animation: hyRot 22s linear infinite; }
+    .hy-spin.r { animation-direction: reverse; animation-duration: 14s; }
+    .hy-spin.f { animation-duration: 8s; }
+    .hy-spin.s { animation-duration: 40s; }
+    @keyframes hyRot { to { transform: rotate(360deg); } }
+    .hy-glow { transform-origin: 200px 200px; transform-box: view-box; animation: hyPulse 2.6s ease-in-out infinite; }
+    @keyframes hyPulse { 0%, 100% { opacity: .7; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
+    body.stark .reactor[data-state="listening"] .hy-spin { animation-duration: 6s; }
+    body.stark .reactor[data-state="thinking"] .hy-spin { animation-duration: 2.8s; }
+    body.stark .reactor[data-state="speaking"] .hy-glow { animation-duration: .7s; }
+    body.stark .reactor[data-state="thinking"] .hy-hex { opacity: .15; transition: opacity .4s; }
+    /* ④ 데이터 궤도 위성 */
+    body.stark .data-orbit { display: block; position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+    .data-orbit i { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-style: normal; font-family: var(--tech); font-size: 10.5px; letter-spacing: 1px;
+      color: #001b1c; background: var(--cyan); padding: 3px 8px; box-shadow: 0 0 12px var(--cyan); white-space: nowrap; pointer-events: auto; cursor: pointer;
+      clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%); }
+    @media (max-width: 600px) { .data-orbit i { font-size: 9px; padding: 2px 6px; } }
+    .data-orbit i.warn { background: var(--amber); box-shadow: 0 0 12px var(--amber); }
+    /* ⑤ 생각 중: 가운데에 신경망 구 */
+    body.stark .neural-sphere { display: block; position: absolute; left: 50%; top: 50%; width: 46%; height: 46%; transform: translate(-50%, -50%); pointer-events: none; opacity: 0; transition: opacity .5s; }
+    body.stark .reactor[data-state="thinking"] .neural-sphere { opacity: 1; }
+    body.stark .reactor[data-state="thinking"] .core-label, body.stark .reactor[data-state="thinking"] .core-sub { opacity: .35; }
+    /* ② 코어 뒤 배경 지구본 */
+    body.stark .center { position: relative; }
+    body.stark .center { overflow-x: clip; }
+    body.stark .bg-globe { display: block; position: absolute; left: 50%; top: 2%; width: min(130%, 720px); aspect-ratio: 1; transform: translateX(-50%); opacity: .3; pointer-events: none; z-index: 0; }
+    body.stark .center > *:not(.bg-globe) { position: relative; z-index: 1; }
+    body.mini .bg-globe, body.mini .data-orbit { display: none !important; }
+    /* ③ 제품지식 창 맨 위 필름 분해도 */
+    .film-hero { position: relative; height: 236px; margin: 6px 0 4px; perspective: 800px; overflow: hidden; border-bottom: 1px solid rgba(20, 232, 232, .2); }
+    .film-hero .fl { position: absolute; inset: 0; transform-style: preserve-3d; transform: rotateX(58deg) rotateZ(-36deg); animation: filmFloat 7s ease-in-out infinite; }
+    @keyframes filmFloat { 0%, 100% { transform: rotateX(58deg) rotateZ(-36deg); } 50% { transform: rotateX(58deg) rotateZ(-26deg); } }
+    .film-hero .ly { position: absolute; left: calc(50% - 40px); top: 62px; width: 130px; height: 130px; border: 1.5px solid var(--cyan); box-shadow: 0 0 12px rgba(20, 232, 232, .35), inset 0 0 18px rgba(20, 232, 232, .15); }
+    .film-hero .ly.prism { background: repeating-linear-gradient(90deg, rgba(20, 232, 232, .35) 0 2px, transparent 2px 9px); }
+    .film-hero .ly.prism2 { background: repeating-linear-gradient(0deg, rgba(20, 232, 232, .3) 0 2px, transparent 2px 9px); }
+    .film-hero .ly.diff { background: radial-gradient(circle, rgba(95, 252, 255, .4) 1px, transparent 1.5px) 0 0/7px 7px; }
+    .film-hero .ly.pet { background: rgba(20, 232, 232, .06); }
+    .film-hero .ly.bc { background: radial-gradient(circle, rgba(20, 232, 232, .5) 1.3px, transparent 2px) 0 0/10px 10px; }
+    .film-hero .lb { position: absolute; left: 0; font-family: var(--mono); font-size: 11px; color: var(--teal); display: flex; align-items: center; gap: 6px; }
+    .film-hero .lb::after { content: ''; width: 30px; height: 1px; background: linear-gradient(90deg, var(--cyan), transparent); }
+    .film-hero .scan { position: absolute; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--teal), transparent); box-shadow: 0 0 10px var(--cyan); animation: filmScan 3.4s linear infinite; }
+    @keyframes filmScan { from { top: 6%; } to { top: 92%; } }
+    @media (prefers-reduced-motion: reduce) { .hy-spin, .hy-glow, .film-hero .fl, .film-hero .scan { animation: none !important; } }
   </style>
 </head>
 <body data-state="idle">
@@ -1163,6 +1288,11 @@
 
     <!-- ===== 상단 바 ===== -->
     <header class="panel topbar">
+      <!-- STARK 스타일: 큰 날짜 -->
+      <div class="stark-date stark-only" id="starkDate">
+        <div class="sd-words"><div class="sd-month" id="sdMonth">-</div><div class="sd-wday" id="sdWday">-</div></div>
+        <div class="sd-ring"><svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="26" fill="none" stroke="rgba(20,232,232,.25)" stroke-width="2"/><circle id="sdArc" cx="30" cy="30" r="26" fill="none" stroke="#14e8e8" stroke-width="4" stroke-dasharray="0 164" transform="rotate(-90 30 30)" style="filter:drop-shadow(0 0 4px #14e8e8)"/><circle cx="30" cy="30" r="20" fill="none" stroke="rgba(20,232,232,.35)" stroke-dasharray="2 3"/></svg><b id="sdDay">-</b></div>
+      </div>
       <div class="logo">J.A.R.V.I.S.<span>PERSONAL BUSINESS ASSISTANT</span></div>
 
       <div class="ctrls">
@@ -1273,6 +1403,8 @@
       <section class="center">
         <div class="reactor" id="reactor" data-state="idle" title="눌러서 바로 말하기 (말하는 중에 누르면 멈춤)">
           <div class="gyro" aria-hidden="true"><i></i><i></i><i></i></div>
+          <!-- ① STARK 하이퍼 코어 (그림은 스크립트가 채움) -->
+          <div class="hyper" aria-hidden="true"><svg viewBox="0 0 400 400" id="hyperSvg"></svg></div>
           <svg viewBox="0 0 400 400" id="reactorSvg">
             <defs>
               <radialGradient id="coreGrad" cx="50%" cy="50%" r="50%">
@@ -1336,6 +1468,10 @@
             <circle cx="200" cy="200" r="192" stroke="rgba(79,255,176,.15)" stroke-width="4"/>
             <circle id="progArc" cx="200" cy="200" r="192" stroke-dasharray="0 1207"/>
           </svg>
+          <!-- ④ 데이터 궤도 위성 -->
+          <div class="data-orbit" id="dataOrbit"></div>
+          <!-- ⑤ 생각 중 신경망 구 -->
+          <canvas class="neural-sphere" id="neuralSphere"></canvas>
           <div class="heard-words" id="heardWords"></div>
         </div>
         <div class="prog-label" id="progLabel"></div>
@@ -1358,6 +1494,8 @@
           </svg>
           <div class="chevs"><i></i><i></i><i></i><i></i></div>
         </div>
+        <!-- STARK 스타일: 반원 게이지 -->
+        <div class="sk-gauges stark-only" id="skGauges"></div>
 
         <p class="hint">
           언제든 <b>"자비스"</b>라고 부르세요. 상시 대기는 항상 켜져 있습니다.<br>
@@ -1380,7 +1518,7 @@
       <aside class="col right">
         <section class="panel pc-only">
           <div class="panel-title">CHRONO <small>KST</small></div>
-          <div class="dial-wrap">
+          <div class="dial-wrap classic-only">
             <svg class="dial" viewBox="0 0 120 120" id="dial">
               <circle cx="60" cy="60" r="56" fill="rgba(63,208,255,.05)" stroke="rgba(63,208,255,.55)" stroke-width="1.5"/>
               <circle cx="60" cy="60" r="47" fill="none" stroke="rgba(63,208,255,.2)" stroke-dasharray="1 3"/>
@@ -1395,6 +1533,21 @@
               <circle cx="60" cy="60" r="4" fill="#3fd0ff"/>
             </svg>
             <div class="date-meta"><b id="dateBig">--.--</b><span id="dateDay">-</span><br><span id="dateYear">-</span></div>
+          </div>
+          <!-- STARK 스타일: 디지털 시계 + 달력 -->
+          <div class="stark-only" id="starkClock">
+            <div class="sk-clock">
+              <div class="sk-rings"><svg viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(20,232,232,.15)" stroke-width="6"/>
+                <circle id="skSec" cx="50" cy="50" r="44" fill="none" stroke="#14e8e8" stroke-width="6" stroke-dasharray="0 277" style="filter:drop-shadow(0 0 4px #14e8e8)"/>
+                <circle cx="50" cy="50" r="33" fill="none" stroke="rgba(20,232,232,.15)" stroke-width="10"/>
+                <circle id="skMin" cx="50" cy="50" r="33" fill="none" stroke="rgba(20,232,232,.75)" stroke-width="10" stroke-dasharray="0 208"/>
+                <circle cx="50" cy="50" r="20" fill="none" stroke="rgba(20,232,232,.35)" stroke-dasharray="3 3"/>
+              </svg></div>
+              <div class="sk-time" id="skTime">--:--</div>
+            </div>
+            <div class="sk-cal"><div class="cap" id="skCap">-</div><div class="grid" id="skGrid"></div></div>
+            <div class="sk-loc" id="skLoc">Seoul, South Korea</div>
           </div>
         </section>
 
@@ -1525,6 +1678,11 @@
       <div class="field">
         <label>휴대폰 기울기 입체 효과</label>
         <button class="btn" id="cfgTilt" type="button">기울기 효과 켜기 (아이폰은 허용 필요)</button>
+      </div>
+
+      <div class="field">
+        <label>화면 스타일</label>
+        <button class="btn" id="cfgStyle" type="button">-</button>
       </div>
 
       <div class="modal-actions">
@@ -4131,6 +4289,200 @@
         p.addEventListener('mouseleave', () => { p.style.setProperty('--ry', '0deg'); p.style.setProperty('--rx', '0deg'); });
       });
     }
+
+    /* ==========================================================
+       96. STARK 스타일: 큰 날짜 · 디지털 시계 · 달력 · 반원 게이지
+       ========================================================== */
+    const SK_MONTHS = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
+    const SK_DAYS = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+    function skNow() { return new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' })); }
+    let skCalKey = '';
+    function skTick() {
+      if (!document.body.classList.contains('stark')) return;
+      const n = skNow(), h = n.getHours(), m = n.getMinutes(), s = n.getSeconds();
+      $('sdMonth').textContent = SK_MONTHS[n.getMonth()];
+      $('sdWday').textContent = SK_DAYS[n.getDay()];
+      $('sdDay').textContent = n.getDate();
+      const dim = new Date(n.getFullYear(), n.getMonth() + 1, 0).getDate();
+      $('sdArc').setAttribute('stroke-dasharray', (n.getDate() / dim * 163.4).toFixed(1) + ' 164');
+      $('skTime').innerHTML = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + '<small>' + String(s).padStart(2, '0') + '</small>';
+      $('skSec').setAttribute('stroke-dasharray', (s / 60 * 276.5).toFixed(1) + ' 277');
+      $('skMin').setAttribute('stroke-dasharray', (m / 60 * 207.3).toFixed(1) + ' 208');
+      const key = n.getFullYear() + '-' + n.getMonth() + '-' + n.getDate();
+      if (key !== skCalKey) { skCalKey = key; skCalendar(n); }
+    }
+    function skCalendar(n) {
+      const y = n.getFullYear(), mo = n.getMonth();
+      $('skCap').textContent = SK_MONTHS[mo].slice(0, 3) + ' ' + y;
+      const first = new Date(y, mo, 1).getDay(), dim = new Date(y, mo + 1, 0).getDate(), prevDim = new Date(y, mo, 0).getDate();
+      let h = ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => '<span class="h' + (i === 0 ? ' sun' : '') + '">' + d + '</span>').join('');
+      for (let i = 0; i < first; i++) h += '<span class="dim">' + (prevDim - first + 1 + i) + '</span>';
+      for (let d = 1; d <= dim; d++) {
+        const wd = (first + d - 1) % 7;
+        h += '<span class="' + (d === n.getDate() ? 'today' : wd === 0 ? 'sun' : '') + '">' + d + '</span>';
+      }
+      $('skGrid').innerHTML = h;
+    }
+    // 반원 게이지 한 개 그리기 (값 / 최대값)
+    function skGauge(label, value, max, text) {
+      const pct = Math.max(0, Math.min(1, (Number(value) || 0) / max));
+      const len = Math.PI * 46;   // 반원 길이
+      return '<div class="sk-g"><svg viewBox="0 0 112 64">' +
+        '<path d="M10 58 A46 46 0 0 1 102 58" fill="none" stroke="rgba(20,232,232,.15)" stroke-width="14"/>' +
+        '<path class="fill" d="M10 58 A46 46 0 0 1 102 58" fill="none" stroke="#14e8e8" stroke-width="14" stroke-dasharray="' + len.toFixed(1) + '" stroke-dashoffset="' + (len * (1 - pct)).toFixed(1) + '"/>' +
+        '<path d="M22 58 A34 34 0 0 1 90 58" fill="none" stroke="rgba(20,232,232,.35)" stroke-dasharray="2 3"/></svg>' +
+        '<div class="lb">' + label + '</div><div class="vl">' + text + '</div></div>';
+    }
+    function skRenderGauges(d) {
+      if (!d) return;
+      const ships = (d.ships || []).filter(s => s.status !== '도착').length;
+      const b = d.baby || {};
+      $('skGauges').innerHTML =
+        skGauge('MAIL', d.unread || 0, 50, (d.unread > 99 ? '99+' : (d.unread || 0)) + '통') +
+        skGauge('TASK', d.openTasks || 0, 20, (d.openTasks || 0) + '건') +
+        skGauge('SHIP', ships, 10, ships + '건 진행') +
+        skGauge('BABY', 280 - (b.dday != null ? b.dday : bbWeekLocal().dday), 280, b.week || bbWeekLocal().text);
+    }
+    // 화면 스타일 전환 (STARK ↔ 기본), 기본값 STARK
+    function applyStyle(name) {
+      document.body.classList.toggle('stark', name === 'stark');
+      try { localStorage.setItem('jarvis_style', name); } catch (e) { }
+      const b = $('cfgStyle'); if (b) b.textContent = name === 'stark' ? '현재: STARK (검은 바탕·청록 선) → 기본으로 바꾸기' : '현재: 기본 (파란 유리) → STARK로 바꾸기';
+      skCalKey = ''; skTick();
+      if (typeof lastDash !== 'undefined' && lastDash) skRenderGauges(lastDash);
+    }
+    let skStyle = 'stark';
+    try { skStyle = localStorage.getItem('jarvis_style') || 'stark'; } catch (e) { }
+    applyStyle(skStyle);
+    $('cfgStyle').onclick = () => applyStyle(document.body.classList.contains('stark') ? 'classic' : 'stark');
+    setInterval(skTick, 1000);
+    // 패널 데이터가 새로 오면 게이지도 갱신
+    const _renderBaby96 = renderBaby;
+    renderBaby = function (b) { _renderBaby96(b); try { if (typeof lastDash !== 'undefined' && lastDash) skRenderGauges(lastDash); } catch (e) { } };
+
+    /* ==========================================================
+       97. STARK 코어 연출
+       ========================================================== */
+    // ① 하이퍼 코어 그리기 (길이가 다른 빛의 호 + 육각 격자 핵, 서로 반대로 회전)
+    (function buildHyper() {
+      const C = 200, arc = (r, a0, a1, w, op) => {
+        const p = (a) => [C + Math.cos(a) * r, C + Math.sin(a) * r], [x0, y0] = p(a0), [x1, y1] = p(a1);
+        return '<path d="M' + x0.toFixed(1) + ' ' + y0.toFixed(1) + ' A' + r + ' ' + r + ' 0 ' + ((a1 - a0) > Math.PI ? 1 : 0) + ' 1 ' + x1.toFixed(1) + ' ' + y1.toFixed(1) + '" fill="none" stroke="#14e8e8" stroke-width="' + w + '" stroke-opacity="' + op + '" stroke-linecap="round"/>';
+      };
+      let h = '<defs><radialGradient id="hyG"><stop offset="0" stop-color="#bffcff" stop-opacity=".55"/><stop offset=".45" stop-color="#14e8e8" stop-opacity=".22"/><stop offset="1" stop-color="#14e8e8" stop-opacity="0"/></radialGradient></defs>';
+      h += '<g class="hy-spin s"><circle cx="200" cy="200" r="190" fill="none" stroke="rgba(20,232,232,.3)"/><circle cx="200" cy="200" r="180" fill="none" stroke="#14e8e8" stroke-width="2" stroke-dasharray="1 8" opacity=".8"/></g>';
+      h += '<g class="hy-spin r">';
+      [[0, .9], [1.1, 1.5], [1.7, 3.0], [3.3, 3.6], [3.9, 5.2], [5.5, 6.0]].forEach(([a, b], i) => { h += arc(158, a, b, i % 2 ? 4 : 10, i % 2 ? .5 : .85); });
+      h += '</g><g class="hy-spin f">';
+      [[.3, 1.9], [2.4, 3.1], [3.5, 4.9], [5.3, 6.1]].forEach(([a, b]) => { h += arc(138, a, b, 2, .65); });
+      h += '</g><g class="hy-spin"><circle cx="200" cy="200" r="120" fill="none" stroke="rgba(95,252,255,.55)" stroke-width="1.5" stroke-dasharray="3 6"/>';
+      for (let k = 0; k < 60; k++) { const a = k / 60 * Math.PI * 2, r1 = k % 5 ? 104 : 98; h += '<line x1="' + (C + Math.cos(a) * r1).toFixed(1) + '" y1="' + (C + Math.sin(a) * r1).toFixed(1) + '" x2="' + (C + Math.cos(a) * 110).toFixed(1) + '" y2="' + (C + Math.sin(a) * 110).toFixed(1) + '" stroke="#14e8e8" stroke-opacity="' + (k % 5 ? .35 : .8) + '"/>'; }
+      h += '</g><circle cx="200" cy="200" r="88" fill="rgba(0,20,22,.6)" stroke="#14e8e8" stroke-width="2"/>';
+      h += '<circle class="hy-glow" cx="200" cy="200" r="84" fill="url(#hyG)"/>';
+      h += '<g class="hy-spin r hy-hex" style="animation-duration:36s">';
+      for (let row = -4; row <= 4; row++) for (let col = -4; col <= 4; col++) {
+        const x = C + col * 18 + (row % 2 ? 9 : 0), y = C + row * 15.6;
+        if (Math.hypot(x - C, y - C) > 70) continue;
+        let d = ''; for (let k = 0; k < 6; k++) { const a = Math.PI / 6 + k * Math.PI / 3; d += (k ? 'L' : 'M') + (x + Math.cos(a) * 9).toFixed(1) + ' ' + (y + Math.sin(a) * 9).toFixed(1); }
+        h += '<path d="' + d + 'Z" fill="rgba(20,232,232,.06)" stroke="rgba(95,252,255,.4)" stroke-width=".8"/>';
+      }
+      h += '</g>';
+      $('hyperSvg').innerHTML = h;
+    })();
+
+    // 화면 효과를 그려도 되는지 (STARK 모드, 미니 모드 아님, 창이 보일 때)
+    const fxOn7 = () => document.body.classList.contains('stark') && !document.body.classList.contains('mini') && !document.hidden;
+    function fitCanvas7(c) { const r = c.getBoundingClientRect(), d = Math.min(2, window.devicePixelRatio || 1); if (!r.width) return null; if (c.width !== Math.round(r.width * d)) { c.width = Math.round(r.width * d); c.height = Math.round(r.height * d); } const x = c.getContext('2d'); x.setTransform(d, 0, 0, d, 0, 0); return { x, w: r.width, h: r.height }; }
+
+    // ② 코어 뒤 배경 지구본 (서울 ↔ 거점 빛줄기)
+    const bgG = document.createElement('canvas'); bgG.className = 'bg-globe'; bgG.setAttribute('aria-hidden', 'true');
+    document.querySelector('.center').prepend(bgG);
+    const G7_SITES = [['서울', 37.5, 127], ['도쿄', 35.7, 139.7], ['말레이시아', 3.1, 101.7], ['멕시코', 19.4, -99.1], ['상해', 31.2, 121.5], ['터키', 38.6, 27.4]];
+    let g7rot = -100;
+    function g7proj(lat, lon, R, cx, cy) {
+      const la = lat * Math.PI / 180, lo = (lon + g7rot) * Math.PI / 180, tl = 0.35;
+      const x = Math.cos(la) * Math.sin(lo), y = Math.sin(la), z = Math.cos(la) * Math.cos(lo);
+      return { x: cx + x * R, y: cy - (y * Math.cos(tl) - z * Math.sin(tl)) * R, z: y * Math.sin(tl) + z * Math.cos(tl) };
+    }
+    function drawBgGlobe(t) {
+      const F = fitCanvas7(bgG); if (!F) return; const { x: c, w, h } = F, R = Math.min(w, h) * 0.44, cx = w / 2, cy = h / 2;
+      c.clearRect(0, 0, w, h); c.lineWidth = .7;
+      for (let lat = -60; lat <= 60; lat += 30) { c.beginPath(); let f = true; for (let lon = 0; lon <= 360; lon += 6) { const p = g7proj(lat, lon, R, cx, cy); if (p.z < 0) { f = true; continue; } f ? c.moveTo(p.x, p.y) : c.lineTo(p.x, p.y); f = false; } c.strokeStyle = 'rgba(20,232,232,.35)'; c.stroke(); }
+      for (let lon = 0; lon < 360; lon += 20) { c.beginPath(); let f = true; for (let lat = -90; lat <= 90; lat += 5) { const p = g7proj(lat, lon, R, cx, cy); if (p.z < 0) { f = true; continue; } f ? c.moveTo(p.x, p.y) : c.lineTo(p.x, p.y); f = false; } c.strokeStyle = 'rgba(20,232,232,.25)'; c.stroke(); }
+      c.beginPath(); c.arc(cx, cy, R, 0, 7); c.strokeStyle = 'rgba(20,232,232,.6)'; c.lineWidth = 1.2; c.stroke();
+      const s0 = G7_SITES[0];
+      G7_SITES.slice(1).forEach((s, i) => {
+        let dl = s[2] - s0[2]; if (dl > 180) dl -= 360; if (dl < -180) dl += 360;
+        const pts = []; for (let k = 0; k <= 32; k++) { const u = k / 32; pts.push(g7proj(s0[1] + (s[1] - s0[1]) * u, s0[2] + dl * u, R * (1 + Math.sin(u * Math.PI) * 0.1), cx, cy)); }
+        c.beginPath(); let f = true; pts.forEach(p => { if (p.z < 0) { f = true; return; } f ? c.moveTo(p.x, p.y) : c.lineTo(p.x, p.y); f = false; });
+        c.strokeStyle = 'rgba(95,252,255,.8)'; c.lineWidth = 1.4; c.stroke();
+        const q = pts[Math.floor(((t / 1500 + i * 0.2) % 1) * 32)]; if (q && q.z > 0) { c.beginPath(); c.arc(q.x, q.y, 2.5, 0, 7); c.fillStyle = '#fff'; c.fill(); }
+      });
+      G7_SITES.forEach((s, i) => { const p = g7proj(s[1], s[2], R, cx, cy); if (p.z < 0) return; c.beginPath(); c.arc(p.x, p.y, i ? 3.5 : 5, 0, 7); c.fillStyle = i ? '#14e8e8' : '#fff'; c.fill(); c.font = '12px "Noto Sans KR"'; c.fillStyle = 'rgba(200,251,251,.9)'; c.fillText(s[0], p.x + 7, p.y - 6); });
+      g7rot -= 0.06;
+    }
+
+    // ⑤ 생각 중 신경망 구
+    const nsC = $('neuralSphere'), NS_N = 120, nsPts = [], nsLinks = [];
+    for (let i = 0; i < NS_N; i++) { const y = 1 - (i / (NS_N - 1)) * 2, r = Math.sqrt(1 - y * y), th = i * 2.399963; nsPts.push([Math.cos(th) * r, y, Math.sin(th) * r]); }
+    for (let i = 0; i < NS_N; i++) for (let j = i + 1; j < NS_N; j++) if (Math.hypot(nsPts[i][0] - nsPts[j][0], nsPts[i][1] - nsPts[j][1], nsPts[i][2] - nsPts[j][2]) < 0.34) nsLinks.push([i, j]);
+    let nsRot = 0;
+    function drawNeuralSphere(t) {
+      if ($('reactor').dataset.state !== 'thinking') return;
+      const F = fitCanvas7(nsC); if (!F) return; const { x: c, w, h } = F, R = Math.min(w, h) * 0.45, cx = w / 2, cy = h / 2;
+      c.clearRect(0, 0, w, h);
+      const cs = Math.cos(nsRot), sn = Math.sin(nsRot);
+      const P = nsPts.map(p => { const x = p[0] * cs + p[2] * sn, z = -p[0] * sn + p[2] * cs; return { x: cx + x * R, y: cy + p[1] * R, z }; });
+      nsLinks.forEach(([a, b], k) => { const A = P[a], B = P[b]; const lit = ((k * 37 + Math.floor(t / 60)) % 40) === 0; c.beginPath(); c.moveTo(A.x, A.y); c.lineTo(B.x, B.y); c.strokeStyle = lit ? 'rgba(255,255,255,.95)' : 'rgba(20,232,232,' + (0.1 + ((A.z + B.z) / 2 + 1) * 0.2).toFixed(2) + ')'; c.lineWidth = lit ? 1.6 : .7; c.stroke(); });
+      P.forEach(p => { c.beginPath(); c.arc(p.x, p.y, 1 + (p.z + 1), 0, 7); c.fillStyle = 'rgba(95,252,255,' + (0.35 + (p.z + 1) * 0.3).toFixed(2) + ')'; c.fill(); });
+      nsRot += 0.02;
+    }
+
+    // ④ 데이터 궤도: MAIL·TASK·SHIP·BABY 위성이 코어 둘레를 돎 (글자는 똑바로, 누르면 해당 창)
+    const DO = [
+      { key: 'MAIL', r: .47, sp: 26, a: 0.2, open: () => sendCommand('안 읽은 신규 메일 파악해서 보고해줘') },
+      { key: 'TASK', r: .47, sp: 26, a: 1.77, open: () => sendCommand('오늘 할 일 알려줘') },
+      { key: 'SHIP', r: .47, sp: 26, a: 3.34, open: () => { const s = (lastDash && lastDash.ships || []).filter(x => x.status !== '도착')[0]; s ? openDetail('ship', s.id) : sendCommand('선적 현황 알려줘'); } },
+      { key: 'BABY', r: .47, sp: 26, a: 4.91, open: () => openBaby() }
+    ];
+    DO.forEach(o => { const el = document.createElement('i'); el.textContent = o.key; el.onclick = (e) => { e.stopPropagation(); o.open(); }; $('dataOrbit').appendChild(el); o.el = el; });
+    function updateOrbitLabels(d) {
+      if (!d) return;
+      const ships = (d.ships || []).filter(s => s.status !== '도착').length, b = d.baby || {};
+      DO[0].el.textContent = 'MAIL ' + (d.unread > 99 ? '99+' : (d.unread || 0)); DO[0].el.classList.toggle('warn', (d.unread || 0) >= 30);
+      DO[1].el.textContent = 'TASK ' + (d.openTasks || 0);
+      DO[2].el.textContent = 'SHIP ' + ships;
+      DO[3].el.textContent = 'BABY ' + (b.week ? b.week.replace(/주\s*/, 'W ').replace('일', 'D') : bbWeekLocal().text.replace(/주\s*/, 'W ').replace('일', 'D'));
+    }
+    function drawOrbit7(t) {
+      const box = $('dataOrbit').getBoundingClientRect(); if (!box.width) return;
+      const rr = box.width < 420 ? .38 : 0;
+      DO.forEach(o => { const a = o.a + t / 1000 * (2 * Math.PI / o.sp), r = rr || o.r; o.el.style.left = (50 + Math.cos(a) * r * 100) + '%'; o.el.style.top = (50 + Math.sin(a) * r * 92) + '%'; });
+    }
+
+    // 한 번에 그리기 (초당 약 30번, 화면이 안 보이면 쉼)
+    let last7 = 0;
+    function loop7(t) {
+      requestAnimationFrame(loop7);
+      if (t - last7 < 33 || !fxOn7()) return; last7 = t;
+      try { drawBgGlobe(t); drawNeuralSphere(t); drawOrbit7(t); } catch (e) { }
+    }
+    requestAnimationFrame(loop7);
+    const _renderBaby97 = renderBaby;
+    renderBaby = function (b) { _renderBaby97(b); try { updateOrbitLabels(lastDash); } catch (e) { } };
+    if (typeof lastDash !== 'undefined' && lastDash) updateOrbitLabels(lastDash);
+
+    // ③ 제품지식 창 맨 위에 필름 분해도
+    const _renderDetail97 = renderDetail;
+    renderDetail = function (d) {
+      _renderDetail97(d);
+      if (d && d.title === '제품지식') {
+        const hero = document.createElement('div'); hero.className = 'film-hero';
+        hero.innerHTML = '<div class="fl"><div class="ly bc" style="transform:translateZ(0)"></div><div class="ly pet" style="transform:translateZ(24px)"></div><div class="ly prism" style="transform:translateZ(48px)"></div><div class="ly prism2" style="transform:translateZ(72px)"></div><div class="ly diff" style="transform:translateZ(96px)"></div></div>' +
+          '<div class="lb" style="top:30px">DIFFUSER</div><div class="lb" style="top:70px">PRISM 2</div><div class="lb" style="top:110px">PRISM 1</div><div class="lb" style="top:150px">PET</div><div class="lb" style="top:190px">BACK COAT</div><div class="scan"></div>';
+        $('dtBody').prepend(hero);
+      }
+    };
   </script>
 
 </body>
