@@ -724,6 +724,12 @@
 
     /* ----- 샘플·개발 진행 보드 + 선적 ----- */
     .kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    /* MEMORY BANK: 반투명 유리 카드 6칸 */
+    .mem-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .mem-cell { background: rgba(63,208,255,.07); border: 1px solid rgba(63,208,255,.22); border-radius: 10px; padding: 7px 4px; text-align: center; backdrop-filter: blur(6px); }
+    .mem-cell b { display: block; font-family: 'Share Tech Mono', monospace; font-size: 18px; color: #dff4ff; text-shadow: 0 0 8px rgba(63,208,255,.6); }
+    .mem-cell span { font-size: 10.5px; color: var(--muted); }
+    .mem-q { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
     .kcol { background: rgba(0, 0, 0, 0.18); border: 1px solid var(--line); border-radius: 10px; padding: 6px; min-height: 64px; }
     .kcol h5 { font-size: 10.5px; color: var(--muted); font-weight: 500; display: flex; justify-content: space-between; margin-bottom: 4px; }
     .kcol h5 b { color: var(--cyan); font-family: var(--mono); }
@@ -1049,6 +1055,27 @@
           <div class="panel-title">PIPELINE <small>샘플 진행 · 선적</small></div>
           <div class="kanban" id="kanban"><div class="kcol"><h5>연결 후 표시됩니다</h5></div></div>
           <ul class="ship-list" id="shipList"></ul>
+        </section>
+
+        <!-- 기억 저장소 현황 (기억지도.gs) : 자비스가 알고 있는 자료 개수와 바로 묻기 버튼 -->
+        <section class="panel">
+          <div class="panel-title">MEMORY BANK <small id="memTotal">-</small></div>
+          <div class="mem-grid" id="memGrid">
+            <div class="mem-cell"><b id="memClients">-</b><span>고객사</span></div>
+            <div class="mem-cell"><b id="memContacts">-</b><span>연락처</span></div>
+            <div class="mem-cell"><b id="memIssues">-</b><span>진행 건</span></div>
+            <div class="mem-cell"><b id="memProducts">-</b><span>제품지식</span></div>
+            <div class="mem-cell"><b id="memMemos">-</b><span>메모</span></div>
+            <div class="mem-cell"><b id="memRecipes">-</b><span>레시피</span></div>
+          </div>
+          <div class="mem-q">
+            <button class="hbtn mini-btn" data-q="진행 중인 고객사 건 중요도 순으로 정리해줘">진행 건</button>
+            <button class="hbtn mini-btn" data-q="SONY 담당자 연락처 알려줘">SONY 담당자</button>
+            <button class="hbtn mini-btn" data-q="SONY 메디컬 모니터 이물 건 진행 상황과 다음 할 일 알려줘">메디컬 이물</button>
+            <button class="hbtn mini-btn" data-q="SONY AGLR 저반사 필름 건 정리해줘">AGLR 건</button>
+            <button class="hbtn mini-btn" data-q="아침 주스 레시피 알려줘">아침 주스</button>
+            <button class="hbtn mini-btn" data-q="야채탕 레시피와 장보기 목록 알려줘">야채탕</button>
+          </div>
         </section>
       </aside>
 
@@ -2781,7 +2808,7 @@
     }
 
     /* ----- 고객사 레이더 맵 ----- */
-    const CITY_POS = { '도쿄': [35.68, 139.69], '이스탄불': [41.01, 28.98], '런던': [51.51, -0.13], '워싱턴 D.C.': [38.91, -77.04], '멕시코시티': [19.43, -99.13], '서울': [37.57, 126.98] };
+    const CITY_POS = { '도쿄': [35.68, 139.69], '이스탄불': [41.01, 28.98], '런던': [51.51, -0.13], '워싱턴 D.C.': [38.91, -77.04], '멕시코시티': [19.43, -99.13], '쿠알라룸푸르': [3.14, 101.69], '싱가포르': [1.35, 103.82], '서울': [37.57, 126.98] };
     const ripples = {};   // 고객 메일이 새로 온 도시 → 물결 표시 끝나는 시각
     // 서버를 아직 새 버전으로 배포하지 않았어도 세계 시계에 보이도록 화면에서 기본 도시를 보충 (공휴일 정보는 서버 배포 후 표시)
     const EXTRA_CITIES = [
@@ -2844,6 +2871,18 @@
     }
     setInterval(renderRadar, 30000);
 
+    /* ----- MEMORY BANK: 기억 저장소 개수 표시 ----- */
+    function renderMemory(m) {
+      if (!m || !$('memGrid')) return;
+      const set = (id, v) => { const el = $(id); if (el) el.textContent = v; };
+      set('memClients', m.clients); set('memContacts', m.contacts); set('memIssues', m.issues);
+      set('memProducts', m.products); set('memMemos', m.memos);
+      set('memRecipes', (m.recipes || []).length);
+      const total = (m.clients || 0) + (m.contacts || 0) + (m.products || 0) + (m.issues || 0) + (m.memos || 0);
+      set('memTotal', total + '건 기억 중');
+      const r = $('memRecipes'); if (r) r.parentNode.title = (m.recipes || []).join('\n');
+    }
+
     /* ----- 샘플 진행 보드 + 선적 ----- */
     function renderPipeline(d) {
       const kb = $('kanban');
@@ -2890,6 +2929,7 @@
       lastDash = d;
       try { renderRadar(); } catch (e) { }
       try { renderPipeline(d); } catch (e) { }
+      try { renderMemory(d.memory); } catch (e) { }
       if (document.body.dataset.theme !== 'alert') setTheme(d.focus ? 'focus' : (d.diag && d.diag.issues ? 'alert' : ''));
       fx3.shortMode = !!d.shortMode;
       $('sysShort').textContent = fx3.shortMode ? '켜짐' : '꺼짐';
