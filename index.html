@@ -990,7 +990,7 @@
 
     /* --- 패널: 마우스 위치 따라 입체 기울기 + 빛나는 회전 테두리 --- */
     @property --ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
-    .panel.p3d { transition: transform .18s ease-out, box-shadow .25s; transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateZ(0); will-change: transform; }
+    .panel.p3d { transition: box-shadow .25s; }
     .panel.p3d:hover { box-shadow: 0 18px 40px rgba(0, 0, 0, .45), 0 0 34px var(--glow), inset 0 0 26px rgba(63, 208, 255, .1); z-index: 2; }
     .panel-title { position: relative; overflow: hidden; }
     .panel-title::after { content: ''; position: absolute; top: 0; bottom: 0; width: 40%; left: -60%; background: linear-gradient(90deg, transparent, rgba(150, 230, 255, .25), transparent); animation: titleSweep 7s ease-in-out infinite; pointer-events: none; }
@@ -1219,6 +1219,16 @@
            위: 제품군 탭 → 가운데: 3D 분해도 + 핵심 정보 → 아래: BOM 상세
        ========================================================== */
     .dt.wide { max-width: 880px; }
+    .pf-search { position: relative; margin-top: 10px; }
+    .pf-search input { width: 100%; height: 40px; padding: 0 38px 0 38px; border-radius: 12px; border: 1px solid rgba(63, 208, 255, .35); background: rgba(0, 0, 0, .3); color: #eaf8ff; font-size: 14px; outline: none; transition: border-color .2s, box-shadow .2s; }
+    .pf-search input:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(63, 208, 255, .15); }
+    .pf-search input::placeholder { color: var(--muted); }
+    .pf-search .ic { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--cyan); font-size: 14px; pointer-events: none; }
+    .pf-search .clr { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 26px; height: 26px; border-radius: 8px; border: 0; background: transparent; color: var(--muted); cursor: pointer; display: none; }
+    .pf-search.has .clr { display: block; }
+    .pf-res { margin-top: 4px; }
+    .pf-res .hint { font-size: 11.5px; color: var(--muted); margin: 8px 0 2px; }
+    .pf-on-search .pf-tabs, .pf-on-search .pf-hero, .pf-on-search .pf-more { display: none; }
     .pf-tabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 10px 0 4px; }
     .pf-tab { position: relative; padding: 10px 8px 9px; border-radius: 12px; border: 1px solid rgba(63, 208, 255, .2); background: linear-gradient(160deg, rgba(63, 208, 255, .08), rgba(0, 0, 0, .2)); color: var(--text); cursor: pointer; text-align: left; transition: border-color .2s, transform .2s, box-shadow .2s; }
     .pf-tab:hover { transform: translateY(-2px); border-color: rgba(63, 208, 255, .5); }
@@ -1230,7 +1240,7 @@
     .pf-tab .mini span { height: 3px; border-radius: 2px; background: rgba(63, 208, 255, .45); transform: skewX(-30deg); }
     .pf-tab .mini span.k { background: rgba(255, 181, 71, .75); }
     .pf-hero { display: grid; grid-template-columns: 1.15fr 1fr; gap: 14px; align-items: center; margin-top: 8px; padding: 6px 0 12px; border-bottom: 1px solid rgba(63, 208, 255, .18); }
-    .pf-stage { position: relative; height: 300px; perspective: 900px; overflow: hidden; }
+    .pf-stage { position: relative; height: 320px; perspective: 900px; overflow: hidden; }
     .pf-stack { position: absolute; left: 68%; top: 62%; width: 0; height: 0; transform-style: preserve-3d; transform: rotateX(58deg) rotateZ(-38deg); animation: pfFloat 8s ease-in-out infinite; }
     @keyframes pfFloat { 0%, 100% { transform: rotateX(58deg) rotateZ(-38deg); } 50% { transform: rotateX(58deg) rotateZ(-28deg); } }
     .pf-ly { position: absolute; left: -68px; top: -68px; width: 136px; height: 136px; border: 1.5px solid var(--cyan); background: rgba(63, 208, 255, .05); box-shadow: 0 0 12px rgba(20, 232, 232, .3), inset 0 0 16px rgba(20, 232, 232, .12);
@@ -3605,13 +3615,7 @@
     function scanPanels() {
       panelEls().forEach((p, i) => setTimeout(() => { p.classList.remove('scan'); void p.offsetWidth; p.classList.add('scan'); }, i * 110));
     }
-    document.addEventListener('pointermove', (e) => {
-      if (e.pointerType !== 'mouse') return;
-      const p = e.target.closest && e.target.closest('.col .panel');
-      if (!p) return;
-      const r = p.getBoundingClientRect(), l = p.querySelector(':scope > .fx-layer');
-      if (l) { l.style.setProperty('--gx', (e.clientX - r.left) + 'px'); l.style.setProperty('--gy', (e.clientY - r.top) + 'px'); }
-    });
+    // 깜빡임 방지: 마우스를 따라다니던 반사광은 끔 (패널 스캔 효과는 유지)
 
     /* ==========================================================
        79. 숫자 굴러가기
@@ -3878,10 +3882,9 @@
     }
     if (!isPhone) {
       let pmT = 0;
-      document.addEventListener('mousemove', (e) => {
-        if (performance.now() - pmT < 40) return; pmT = performance.now();
-        applyParallax(e.clientX / window.innerWidth * 2 - 1, e.clientY / window.innerHeight * 2 - 1);
-      });
+      // 깜빡임 방지: 마우스를 따라 화면 전체가 움직이던 효과는 끄고, 기본 각도만 한 번 적용
+      applyParallax(0, 0);
+      window.addEventListener('resize', () => applyParallax(0, 0));
     }
     function startTilt() {
       const go = () => {
@@ -4346,12 +4349,7 @@
     if (!isPhone) {
       document.querySelectorAll('.col .panel').forEach(p => {
         p.classList.add('p3d');
-        p.addEventListener('mousemove', (e) => {
-          const r = p.getBoundingClientRect();
-          const x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
-          p.style.setProperty('--ry', (x * 6).toFixed(2) + 'deg'); p.style.setProperty('--rx', (-y * 5).toFixed(2) + 'deg');
-        });
-        p.addEventListener('mouseleave', () => { p.style.setProperty('--ry', '0deg'); p.style.setProperty('--rx', '0deg'); });
+        // 깜빡임 방지: 마우스 위치에 따라 창이 기울던 효과는 끔 (창 위에 올리면 테두리만 은은하게 밝아짐)
       });
     }
 
@@ -4549,15 +4547,15 @@
         info: [['대표', 'UTA13B-_B (Array Cone) · UTA11H-_B (Random) · WTC12-_A'], ['두께', '65" 388㎛ · 75" 455㎛'], ['특징', 'High Gain MOP, 양산']] },
       UTA: { short: 'POP · POP+ · DPP', full: 'Prism On Prism (POP · POP+) · DPP',
         vars: {
-          'POP': [['Wave Prism 50㎛', 'wave'], ['Prism 60~70㎛ · UV Curing', 'prism2'], ['PET', 'pet'], ['Back Coating Haze 1%', 'bc']],
-          'POP+': [['Wave Prism 20㎛', 'wave'], ['Middle Coating Haze 30%', 'coat'], ['Prism 70㎛', 'prism2'], ['PET', 'pet'], ['Bottom Coating Haze 30%', 'bc']],
-          'DPP': [['Diffuser', 'diff'], ['Prism 60~70㎛', 'prism'], ['Prism 60~70㎛', 'prism2'], ['PET', 'pet'], ['Back Coating Haze 1~3%', 'bc']]
+          'POP': [['Wave Prism 50㎛', 'wave'], ['PET', 'pet'], ['Prism 60~70㎛ · UV Curing', 'prism2'], ['PET', 'pet'], ['Back Coating Haze 1%', 'bc']],
+          'POP+': [['Wave Prism 20㎛', 'wave'], ['PET', 'pet'], ['Middle Coating Haze 30%', 'coat'], ['Prism 70㎛', 'prism2'], ['PET', 'pet'], ['Bottom Coating Haze 30%', 'bc']],
+          'DPP': [['Diffuser', 'diff'], ['Prism 60~70㎛', 'prism'], ['PET', 'pet'], ['Prism 60~70㎛', 'prism2'], ['PET', 'pet'], ['Back Coating Haze 1~3%', 'bc']]
         },
         info: [['POP', 'UTA20H-_A · UTA21B-_A / 13T 330㎛ · 18T 450㎛'], ['POP+', 'UTA22-15EE · 20EE 고차폐 (PET 두께만 다름) / 18T 450 · 23T 570㎛'], ['DPP', 'UTA60-_B · UTA41-_A 3층 / 14T 410 · 16T 500㎛'], ['적용', 'SONY 메디컬 모니터 UTA20H-10A · VESTEL 모델 BOM 등록']] },
       UTX: { short: 'QPP · UTP 편광 복합', full: 'QPP · Polarizer Complex 3층 복합시트',
         vars: {
-          'UTX': [['Diffuser · QV5/RPX Core', 'polar', 1], ['Prism 70㎛', 'prism'], ['Prism 60~70㎛', 'prism2'], ['PET', 'pet'], ['Back Coating Haze 15%', 'bc']],
-          'UTP': [['Diffuser · QV5/RPX Core', 'polar', 1], ['PET', 'pet'], ['Prism 70㎛', 'prism'], ['Back Coating Haze 3%', 'bc']]
+          'UTX': [['Diffuser · QV5/RPX Core', 'polar', 1], ['Prism 70㎛', 'prism'], ['PET', 'pet'], ['Prism 60~70㎛', 'prism2'], ['PET', 'pet'], ['Back Coating Haze 15%', 'bc']],
+          'UTP': [['Diffuser · QV5/RPX Core', 'polar', 1], ['PET', 'pet'], ['Prism 70㎛', 'prism'], ['PET', 'pet'], ['Back Coating Haze 3%', 'bc']]
         },
         info: [['UTX', 'UTX13B-15P / 13T 380㎛ · 16T 485㎛'], ['UTP', 'UTP21B-_LB / 11T 330㎛ · 14T 420㎛'], ['공정', 'Back Coating → Prism 1차 Lami → Prism 2차 Lami(+QV5) → Imprinting Diffuser'], ['적용', 'SONY UTX10B·11B·13B 계열 · VESTEL UTX13B-13P']] },
       UTR: { short: 'RPX Core 복합', full: 'RPX Core 3층 복합시트',
@@ -4565,9 +4563,9 @@
         info: [['대표', 'UTR14B-14P (50", RPX V2) 총 470㎛ · 기재 358㎛'], ['SONY', 'UTR14A-14B (RPX V1) SJ L-R 55" · SJ 2L-R 65"'], ['물성', 'Haze 87% · 경도 2H · 부착 4B 이상'], ['이름', 'B = RPX V2 · A = RPX V1 · 뒷자리 P = B/C Haze 15%']] },
       AIOP: { short: '확산판 일체형 (개발)', full: 'All-In-One · 필름 + 확산판 일체형 (개발 중)',
         vars: {
-          'DPP AIOP': [['Diffuser', 'diff'], ['Prism', 'prism'], ['Prism', 'prism2'], ['Multi-layer Pattern', 'pattern'], ['Diffuser Plate', 'plate']],
-          'UTX AIOP': [['반사편광 Core (QV5 / RPX)', 'polar', 1], ['Prism', 'prism'], ['Prism', 'prism2'], ['Multi-layer Pattern', 'pattern'], ['Diffuser Plate', 'plate']],
-          'RGB AIOP': [['UTX형 (RPX V1·V2) 또는 DPP형', 'polar', 1], ['Prism', 'prism'], ['Prism', 'prism2'], ['Glass', 'glass']]
+          'DPP AIOP': [['Diffuser', 'diff'], ['Prism', 'prism'], ['PET', 'pet'], ['Prism', 'prism2'], ['PET', 'pet'], ['Multi-layer Pattern', 'pattern'], ['Diffuser Plate', 'plate']],
+          'UTX AIOP': [['반사편광 Core (QV5 / RPX)', 'polar', 1], ['Prism', 'prism'], ['PET', 'pet'], ['Prism', 'prism2'], ['PET', 'pet'], ['Multi-layer Pattern', 'pattern'], ['Diffuser Plate', 'plate']],
+          'RGB AIOP': [['UTX형 (RPX V1·V2) 또는 DPP형', 'polar', 1], ['Prism', 'prism'], ['PET', 'pet'], ['Prism', 'prism2'], ['PET', 'pet'], ['Glass', 'glass']]
         },
         info: [['개념', '광학필름과 확산판을 하나로 통합, 공정 단순화·자원 절감'], ['UTXP', '휘도 SPL1 100.67% · SPL2 99.88% (기존 UTX+DP 100% 기준)'], ['대체', 'RPX V2 UTX 101% · RPX V1 UTX 85% · DPP+ 75%']],
         warn: '개발 중 제품의 층 구성은 개념도입니다. 세부 층은 개발 자료 확인 필요.' }
@@ -4578,7 +4576,7 @@
     // 층 구조 3D 그리기 (층 간격은 층 수에 맞춰 자동 조절)
     function pfDraw(layers) {
       const st = document.querySelector('.pf-stage'); if (!st) return;
-      const n = layers.length, gap = Math.min(30, 130 / Math.max(1, n - 1));
+      const n = layers.length, gap = Math.min(30, 150 / Math.max(1, n - 1));
       let h = '<div class="pf-stack">';
       layers.forEach((l, i) => { const z = (n - 1 - i) * gap; h += '<div class="pf-ly ' + l[1] + '" style="--z:' + z + 'px;--n:' + i + '"></div>'; });
       h += '</div>';
@@ -4591,6 +4589,16 @@
 
     function pfRender(counts) {
       const body = $('dtBody'); body.innerHTML = '';
+      // 검색창: 제품명·모델명·제품코드·고객번호 등을 입력하면 아래에 결과 (지우면 원래 화면)
+      const sb = document.createElement('div'); sb.className = 'pf-search';
+      sb.innerHTML = '<span class="ic">⌕</span><input id="pfQ" type="text" enterkeyhint="search" autocomplete="off" placeholder="제품명·모델명·코드 검색 (예: UTX13B, SJ 2L, 5-064-083, FUP10E)"><button class="clr" title="지우기">✕</button>';
+      body.appendChild(sb);
+      const res = document.createElement('div'); res.className = 'pf-res'; res.id = 'pfRes'; body.appendChild(res);
+      const q = sb.querySelector('input');
+      let qT = null;
+      q.addEventListener('input', () => { clearTimeout(qT); sb.classList.toggle('has', !!q.value); qT = setTimeout(() => pfSearch(q.value), 450); });
+      q.addEventListener('keydown', (e) => { if (e.key === 'Enter') { clearTimeout(qT); pfSearch(q.value); } if (e.key === 'Escape' && q.value) { e.stopPropagation(); q.value = ''; sb.classList.remove('has'); pfSearch(''); } });
+      sb.querySelector('.clr').onclick = () => { q.value = ''; sb.classList.remove('has'); pfSearch(''); q.focus(); };
       const tabs = document.createElement('div'); tabs.className = 'pf-tabs';
       PF_KEYS.forEach(k => {
         const f = PF[k], ls = f.layers || Object.values(f.vars)[0];
@@ -4639,6 +4647,27 @@
         more.innerHTML = '<div class="hint">상세를 불러오지 못했습니다. 서버에 새 버전(화면상세.gs)이 배포되었는지 확인해 주세요. (' + esc5(e.message) + ')</div>';
       }
       if (!first) more.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // 검색 실행: 결과가 오는 동안 다른 글자를 더 치면 이전 결과는 버림
+    let pfSeq = 0;
+    async function pfSearch(text) {
+      const body = $('dtBody'), res = $('pfRes'); if (!res) return;
+      const t = String(text || '').trim();
+      const seq = ++pfSeq;
+      if (t.length < 2) { body.classList.remove('pf-on-search'); res.innerHTML = t ? '<div class="hint">두 글자 이상 입력해 주세요.</div>' : ''; return; }
+      body.classList.add('pf-on-search');
+      res.innerHTML = '<div class="hint">"' + esc5(t) + '" 찾는 중…</div>';
+      try {
+        const r = await api({ action: 'detail', kind: 'psearch', id: t });
+        if (seq !== pfSeq) return;
+        if (!r || !r.ok) throw new Error((r && r.error) || '응답 없음');
+        res.innerHTML = '<div class="hint">' + esc5(r.data.sub || '') + '</div>';
+        if ((r.data.sections || []).length) renderSections(res, r.data.sections);
+        else res.innerHTML += '<div class="dt-loading">찾는 내용이 없습니다. 다른 표기(하이픈 없이, 앞부분만)로 검색해 보세요.</div>';
+      } catch (e) {
+        if (seq === pfSeq) res.innerHTML = '<div class="hint">검색하지 못했습니다. 서버에 새 화면상세.gs가 배포되었는지 확인해 주세요. (' + esc5(e.message) + ')</div>';
+      }
     }
 
     const _renderDetail98 = renderDetail;
