@@ -1636,6 +1636,7 @@
         <section class="panel">
           <div class="panel-title">SYSTEM <button class="hbtn mini-btn" id="refreshBtn">새로고침</button></div>
           <ul class="sys">
+            <li><span>서버 버전</span><span id="sysVer">-</span></li>
             <li><span>서버 연결</span><span id="sysConn">확인 전</span></li>
             <li><span>음성 방식</span><span id="sysVoice">-</span></li>
             <li><span>마지막 응답 시간</span><span id="sysLatency">-</span></li>
@@ -4677,6 +4678,16 @@
       document.querySelector('.panel.dt').classList.toggle('wide', isProd);
       if (isProd) pfRender(d.families);
     };
+
+    /* ----- 서버 버전 표시: 새 서버 파일이 배포됐는지 SYSTEM 칸에서 바로 확인 (8차) ----- */
+    const _renderDashboard8 = renderDashboard;
+    renderDashboard = function (d) {
+      _renderDashboard8(d);
+      const el = $('sysVer'); if (!el || !d) return;
+      el.textContent = d.version || '예전 서버 (새 버전 배포 필요)';
+      el.style.color = d.version ? '' : '#ffb547';
+    };
+    if (typeof lastDash !== 'undefined' && lastDash) renderDashboard(lastDash);
   </script>
 
 </body>
