@@ -1282,6 +1282,22 @@
       .pf-stage { height: 260px; }
     }
     @media (prefers-reduced-motion: reduce) { .pf-stack, .pf-ly, .pf-lb, .pf-scan { animation: none !important; } }
+
+    /* ==========================================================
+       100. 여행 플래너 창 (11차)
+       ========================================================== */
+    .tp-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; margin-top: 8px; }
+    .tp-form label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--muted); }
+    .tp-form label.full { grid-column: 1 / -1; }
+    .tp-form input, .tp-form select, .tp-form textarea { font: 14px inherit; font-family: inherit; color: var(--text); background: rgba(0, 0, 0, .3); border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; outline: none; }
+    .tp-form input:focus, .tp-form select:focus, .tp-form textarea:focus { border-color: var(--cyan); }
+    .tp-form textarea { min-height: 54px; resize: vertical; }
+    .tp-actions { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+    .tp-go { padding: 10px 18px; border-radius: 10px; border: 1px solid var(--cyan); background: linear-gradient(160deg, rgba(63, 208, 255, .35), rgba(95, 242, 224, .15)); color: #fff; font: 600 14px inherit; font-family: inherit; cursor: pointer; }
+    .tp-go:disabled { opacity: .5; cursor: wait; }
+    .tp-msg { margin-top: 12px; font-size: 13px; line-height: 1.6; color: #cfe6f8; white-space: pre-wrap; }
+    .tp-msg a { color: var(--cyan); }
+    @media (max-width: 640px) { .tp-form { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body data-state="idle">
@@ -1358,6 +1374,7 @@
         <button class="ctrl on" id="voiceToggle"><span class="ring-btn" id="voiceIcon">🔊</span><span id="voiceLabel">음성 켜짐</span></button>
         <button class="ctrl" id="consoleBtn"><span class="ring-btn">💬</span>명령 창</button>
         <button class="ctrl pc-only" id="miniBtn" title="미니 모드 (키보드 M)"><span class="ring-btn">▣</span>미니</button>
+        <button class="ctrl" id="tripBtn" title="여행 플래너"><span class="ring-btn">✈</span>여행</button>
         <button class="ctrl" id="settingsBtn"><span class="ring-btn">⚙</span>설정</button>
       </div>
 
@@ -4688,6 +4705,58 @@
       el.style.color = d.version ? '' : '#ffb547';
     };
     if (typeof lastDash !== 'undefined' && lastDash) renderDashboard(lastDash);
+
+    /* ==========================================================
+       100. 여행 플래너 창 (11차): 목적지·날짜를 넣으면 일자별 일정 문서를 만들어 줌
+       ========================================================== */
+    function openTrip() {
+      dtStack.length = 0;
+      $('dtBg').classList.add('show'); document.body.classList.add('modal-open'); $('dtBack').classList.remove('on');
+      $('dtTitle').textContent = '여행 플래너'; $('dtSub').textContent = '맛집·관광지·쇼핑·교통·숙소·경비를 일자별로 정리해 구글 문서로 만듭니다 (1~2분)'; $('dtChips').innerHTML = '';
+      const d0 = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10), d1 = new Date(Date.now() + 16 * 86400000).toISOString().slice(0, 10);
+      $('dtBody').innerHTML = '<form class="tp-form" id="tpForm">' +
+        '<label class="full">목적지<input id="tpDest" required placeholder="예: 오사카, 제주 서귀포, 다낭"></label>' +
+        '<label>출발일<input id="tpStart" type="date" required value="' + d0 + '"></label>' +
+        '<label>돌아오는 날<input id="tpEnd" type="date" required value="' + d1 + '"></label>' +
+        '<label>인원<input id="tpPeople" value="2명 (부부)"></label>' +
+        '<label>예산 (선택)<input id="tpBudget" placeholder="예: 1인 100만 원"></label>' +
+        '<label>스타일<select id="tpStyle"><option>맛집·관광 균형</option><option>맛집 위주</option><option>관광·명소 위주</option><option>쇼핑 위주</option><option>휴양·여유</option><option>태교 여행 (무리 없는 일정)</option></select></label>' +
+        '<label>교통<select id="tpMove"><option value="">알아서</option><option>대중교통</option><option>렌터카</option><option>택시 위주</option></select></label>' +
+        '<label class="full">요청사항 (선택)<textarea id="tpNotes" placeholder="예: 오마카세 1번 꼭, 걷는 거리 적게, 아이 용품 쇼핑"></textarea></label>' +
+        '<div class="tp-actions"><button type="button" class="hbtn mini-btn" id="tpList">지난 여행 보기</button><button class="tp-go" id="tpGo">일정 만들기</button></div>' +
+        '</form><div class="tp-msg" id="tpMsg"></div>';
+      $('tpForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const btn = $('tpGo'); btn.disabled = true; btn.textContent = '검색하며 만드는 중…';
+        $('tpMsg').textContent = '최신 맛집·가격·예약 방법을 찾고 있습니다. 1~2분 걸립니다. 창을 닫아도 완성되면 텔레그램으로 링크가 갑니다.';
+        const notes = [$('tpMove').value ? '교통: ' + $('tpMove').value : '', $('tpNotes').value].filter(String).join(' / ');
+        try {
+          const r = await api({ action: 'trip', op: 'plan', destination: $('tpDest').value, start: $('tpStart').value, end: $('tpEnd').value, people: $('tpPeople').value, budget: $('tpBudget').value, style: $('tpStyle').value, notes });
+          const d = r && r.data;
+          if (!r || !r.ok || !d || d.error) throw new Error((d && d.error) || (r && r.error) || '응답 없음');
+          $('tpMsg').innerHTML = '<b>' + esc5(d.title) + '</b> 완성 (' + d.days + '일, 일정 ' + d.schedule_items + '개' + (d.searched ? ', 웹 자료 ' + d.sources + '건 참고' : ', 검색 없이 작성: 최신 정보 확인 필요') + ')<br>' +
+            '<a href="' + esc5(d.url) + '" target="_blank" rel="noopener">구글 문서로 일정 보기</a><br><br>' + esc5(d.summary || '') +
+            '<br><br><button type="button" class="hbtn mini-btn" id="tpCal">캘린더에 넣기</button>';
+          $('tpCal').onclick = async () => {
+            $('tpCal').disabled = true;
+            const c = await api({ action: 'trip', op: 'calendar', trip_id: d.trip_id });
+            $('tpCal').textContent = c && c.ok && c.data && !c.data.error ? '캘린더에 ' + c.data.added + '개 넣음' : '넣지 못함';
+          };
+        } catch (err) {
+          $('tpMsg').textContent = '만들지 못했습니다: ' + err.message + '\n서버에 11차(여행플래너.gs)가 배포되었는지 확인해 주세요.';
+        } finally { btn.disabled = false; btn.textContent = '일정 만들기'; }
+      };
+      $('tpList').onclick = async () => {
+        $('tpMsg').textContent = '불러오는 중…';
+        try {
+          const r = await api({ action: 'trip', op: 'list' });
+          const t = (r && r.data && r.data.trips) || [];
+          $('tpMsg').innerHTML = t.length ? t.slice().reverse().map(x => esc5(x.start + ' ~ ' + x.end + '  ' + x.dest) + '  <a href="' + esc5(x.url) + '" target="_blank" rel="noopener">문서</a>').join('<br>') : '저장된 여행 계획이 없습니다.';
+        } catch (err) { $('tpMsg').textContent = '불러오지 못했습니다: ' + err.message; }
+      };
+      setTimeout(() => $('tpDest').focus(), 50);
+    }
+    $('tripBtn').onclick = openTrip;
   </script>
 
 </body>
