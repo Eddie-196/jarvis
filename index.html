@@ -1033,6 +1033,64 @@
 
 
 
+
+    /* --- 103. CALENDAR 칸 (14차): 일정 있는 날은 빛나고, 누르면 작은 유리 창 --- */
+    .chrono-old { display: none !important; }
+    .cal-nav { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; }
+    .cal-nav button { font: 600 13px var(--mono, monospace); color: var(--muted); background: rgba(6, 18, 30, .55); border: 1px solid rgba(63, 208, 255, .22);
+      border-radius: 8px; padding: 1px 7px; cursor: pointer; transition: color .15s, border-color .15s, box-shadow .15s; }
+    .cal-nav button:hover { color: #e6f8ff; border-color: var(--cyan); box-shadow: 0 0 10px var(--glow); }
+    .cal-nav button.t { font-size: 10.5px; padding: 2px 7px; }
+    .cal-nav small { min-width: 64px; text-align: center; font-family: var(--mono, monospace); color: #dff4ff; letter-spacing: .5px; }
+    .cal-hud { position: relative; }
+    .cal-hud, .cal-week, .cal-grid { min-width: 0; width: 100%; }
+    .cal-week, .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+    .cal-week span { text-align: center; font-size: 10px; color: var(--muted); padding: 2px 0 4px; letter-spacing: .5px; }
+    .cal-week .csun { color: #ff8a8a; } .cal-week .csat { color: #7fb8ff; }
+    .cal-grid.slide { animation: calSlide .3s ease; }
+    @keyframes calSlide { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .cal-d { position: relative; min-width: 0; padding: 0; aspect-ratio: 1 / .86; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+      font: 500 12px var(--mono, monospace); color: rgba(160, 190, 210, .42); background: rgba(63, 208, 255, .025); border: 1px solid transparent; border-radius: 8px;
+      cursor: pointer; transition: transform .15s, background .15s, border-color .15s, color .15s; }
+    .cal-d:hover { transform: translateY(-1px); border-color: rgba(63, 208, 255, .35); color: #dff4ff; }
+    .cal-d.out { opacity: .28; }
+    .cal-d.csun { color: rgba(255, 138, 138, .5); } .cal-d.csat { color: rgba(127, 184, 255, .5); }
+    .cal-d.has { color: #eaffff; font-weight: 700; background: linear-gradient(150deg, rgba(63, 208, 255, .2), rgba(95, 242, 224, .06)); border-color: rgba(63, 208, 255, .35);
+      text-shadow: 0 0 8px rgba(120, 230, 255, .9); box-shadow: inset 0 0 10px rgba(63, 208, 255, .15), 0 0 10px rgba(63, 208, 255, .12); }
+    .cal-d.has.csun { color: #ffd0d0; } .cal-d.has.csat { color: #d6e9ff; }
+    .cal-d.today { border-color: var(--amber, #ffb547); color: #fff; }
+    .cal-d.today::after { content: ''; position: absolute; inset: -2px; border-radius: 9px; border: 1px solid var(--amber, #ffb547); animation: calRing 2.4s ease-in-out infinite; pointer-events: none; }
+    @keyframes calRing { 50% { opacity: .2; transform: scale(1.06); } }
+    .cal-d.sel { border-color: var(--cyan); box-shadow: 0 0 0 1px var(--cyan), 0 0 14px var(--glow); }
+    .cal-d .dots { display: flex; gap: 2px; height: 4px; }
+    .cal-d .dots i { width: 4px; height: 4px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 5px currentColor; }
+    .cal-empty { grid-column: 1 / -1; font-size: 12px; color: var(--muted); text-align: center; padding: 18px 0; }
+    .cal-foot { margin-top: 6px; font-size: 10.5px; color: var(--muted); text-align: right; min-height: 14px; }
+    .cal-pop { position: absolute; z-index: 6; width: min(250px, 100%); display: none; padding: 10px 12px 8px; border-radius: 12px;
+      background: linear-gradient(150deg, rgba(20, 50, 70, .92), rgba(6, 18, 30, .94)); border: 1px solid rgba(63, 208, 255, .45);
+      box-shadow: 0 14px 30px rgba(0, 0, 0, .5), 0 0 18px rgba(63, 208, 255, .2); backdrop-filter: blur(10px); }
+    .cal-pop.show { display: block; animation: calPop .2s cubic-bezier(.2, .9, .3, 1.3); }
+    @keyframes calPop { from { opacity: 0; transform: translateY(-4px) scale(.96); } to { opacity: 1; transform: none; } }
+    .cal-pop h6 { display: flex; justify-content: space-between; align-items: center; font-size: 12.5px; color: #eaf8ff; margin: 0 0 6px; }
+    .cal-pop h6 button { background: none; border: 0; color: var(--muted); font-size: 14px; cursor: pointer; }
+    .cal-pop .pe { display: grid; grid-template-columns: 46px 1fr; gap: 1px 8px; padding: 6px 0; border-top: 1px solid rgba(63, 208, 255, .12); }
+    .cal-pop .pe:first-of-type { border-top: 0; }
+    .cal-pop .pe b { font: 600 11.5px var(--mono, monospace); color: var(--teal); }
+    .cal-pop .pe span { font-size: 12.5px; color: #e6f8ff; line-height: 1.35; }
+    .cal-pop .pe small { grid-column: 2; font-size: 10.5px; color: var(--muted); }
+    .cal-pop .pe small i { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px; vertical-align: 1px; }
+    .cal-pop .none { font-size: 12px; color: var(--muted); padding: 4px 0 6px; }
+    .cal-pop .add { margin-top: 6px; width: 100%; font-size: 11.5px; padding: 5px; border-radius: 8px; cursor: pointer; color: var(--teal); background: rgba(63, 208, 255, .08); border: 1px dashed rgba(63, 208, 255, .35); }
+    /* TODAY SCHEDULE: 캘린더 색 점 · 진행 중 강조 · 누르면 장소·캘린더 펼침 */
+    .ev-list li.ev2 { cursor: pointer; flex-wrap: wrap; }
+    .ev-list li.ev2 .cdot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 7px; align-self: center; box-shadow: 0 0 6px currentColor; }
+    .ev-list li.ev2 .meta { display: none; flex-basis: 100%; font-size: 11px; color: var(--muted); padding: 3px 0 0 2px; }
+    .ev-list li.ev2.open .meta { display: block; }
+    .ev-list li.ev2.past { opacity: .5; }
+    .ev-list li.ev2.now { border-color: var(--amber, #ffb547) !important; box-shadow: 0 0 12px rgba(255, 181, 71, .25); }
+    .ev-list li.ev2.now .t { color: var(--amber, #ffb547); }
+    @media (prefers-reduced-motion: reduce) { .cal-d.today::after, .cal-grid.slide, .cal-pop.show { animation: none; } }
+
     /* --- 102. 상세 창 거점 탭 + 칩 필터 (13차) --- */
     .dt-nav { display: flex; flex: 0 0 auto; gap: 6px; padding: 10px 18px 2px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
     .dt-chips { flex: 0 0 auto; }
@@ -1637,8 +1695,15 @@
       <!-- 오른쪽: 시간 다이얼, 음성 파형, 시스템, 빠른 명령 -->
       <aside class="col right">
         <section class="panel pc-only">
-          <div class="panel-title">CHRONO <small>KST</small></div>
-          <div class="dial-wrap classic-only">
+          <div class="panel-title">CALENDAR <span class="cal-nav"><button type="button" id="calPrev" title="이전 달">‹</button><small id="calCap">-</small><button type="button" id="calNext" title="다음 달">›</button><button type="button" id="calToday" class="t" title="이번 달">오늘</button></span></div>
+          <!-- 14차: 구글 캘린더 달력 (일정 있는 날은 밝게, 누르면 작은 창) -->
+          <div class="cal-hud" id="calHud">
+            <div class="cal-week"><span class="csun">일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span class="csat">토</span></div>
+            <div class="cal-grid" id="calGrid"><div class="cal-empty">연결 후 표시됩니다</div></div>
+            <div class="cal-foot" id="calFoot"></div>
+            <div class="cal-pop" id="calPop" role="dialog" aria-live="polite"></div>
+          </div>
+          <div class="dial-wrap classic-only chrono-old">
             <svg class="dial" viewBox="0 0 120 120" id="dial">
               <circle cx="60" cy="60" r="56" fill="rgba(63,208,255,.05)" stroke="rgba(63,208,255,.55)" stroke-width="1.5"/>
               <circle cx="60" cy="60" r="47" fill="none" stroke="rgba(63,208,255,.2)" stroke-dasharray="1 3"/>
@@ -1655,7 +1720,7 @@
             <div class="date-meta"><b id="dateBig">--.--</b><span id="dateDay">-</span><br><span id="dateYear">-</span></div>
           </div>
           <!-- STARK 스타일: 디지털 시계 + 달력 -->
-          <div class="stark-only" id="starkClock">
+          <div class="stark-only chrono-old" id="starkClock">
             <div class="sk-clock">
               <div class="sk-rings"><svg viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(20,232,232,.15)" stroke-width="6"/>
@@ -4744,6 +4809,124 @@
     };
 
 
+
+
+    /* ==========================================================
+       103. CALENDAR 칸 + TODAY SCHEDULE (14차)
+            구글 캘린더 일정이 있는 날은 밝게 빛나고, 날짜를 누르면 작은 창으로 일정 표시
+       ========================================================== */
+    const CAL = { ym: '', cache: {}, sel: '' };
+    const calYmNow = () => new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 7);
+    const calTodayStr = () => new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+    const calShift = (ym, n) => { let y = +ym.slice(0, 4), m = +ym.slice(5, 7) + n; while (m < 1) { m += 12; y--; } while (m > 12) { m -= 12; y++; } return y + '-' + String(m).padStart(2, '0'); };
+    const WD = ['일', '월', '화', '수', '목', '금', '토'];
+
+    function calRender(ym, slide) {
+      CAL.ym = ym;
+      const [y, m] = [+ym.slice(0, 4), +ym.slice(5, 7)];
+      $('calCap').textContent = y + '.' + String(m).padStart(2, '0');
+      const days = (CAL.cache[ym] && CAL.cache[ym].days) || {};
+      const first = new Date(Date.UTC(y, m - 1, 1));
+      const startW = first.getUTCDay();
+      const today = calTodayStr();
+      const grid = $('calGrid'); grid.innerHTML = '';
+      for (let i = 0; i < 42; i++) {
+        const dt = new Date(Date.UTC(y, m - 1, 1 - startW + i));
+        const ds = dt.toISOString().slice(0, 10);
+        if (i >= 35 && dt.getUTCMonth() !== m - 1) break;          // 마지막 줄이 전부 다음 달이면 생략
+        const list = days[ds] || (CAL.cache[ds.slice(0, 7)] && CAL.cache[ds.slice(0, 7)].days[ds]) || [];
+        const w = dt.getUTCDay();
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'cal-d' + (dt.getUTCMonth() !== m - 1 ? ' out' : '') + (w === 0 ? ' csun' : w === 6 ? ' csat' : '') +
+          (list.length ? ' has' : '') + (ds === today ? ' today' : '') + (ds === CAL.sel ? ' sel' : '');
+        b.title = list.length ? list.length + '개 일정' : '';
+        b.innerHTML = '<span>' + dt.getUTCDate() + '</span><span class="dots">' +
+          list.slice(0, 3).map(e => '<i style="background:' + esc5(e.color || '') + ';color:' + esc5(e.color || '#5ff2e0') + '"></i>').join('') + '</span>';
+        b.onclick = (ev) => { ev.stopPropagation(); calShowPop(ds, list, b); };
+        grid.appendChild(b);
+      }
+      if (slide) { grid.classList.remove('slide'); void grid.offsetWidth; grid.classList.add('slide'); }
+      const cnt = Object.keys(days).filter(k => k.slice(0, 7) === ym).length;
+      $('calFoot').textContent = CAL.cache[ym] ? '일정 있는 날 ' + cnt + '일 · 구글 캘린더 ' + (CAL.cache[ym].at || '') + ' 기준' : '불러오는 중…';
+    }
+
+    function calShowPop(ds, list, cell) {
+      const pop = $('calPop');
+      if (CAL.sel === ds && pop.classList.contains('show')) { calHidePop(); return; }
+      CAL.sel = ds;
+      document.querySelectorAll('.cal-d.sel').forEach(x => x.classList.remove('sel')); cell.classList.add('sel');
+      const d = new Date(ds + 'T00:00:00Z');
+      pop.innerHTML = '<h6><span>' + (d.getUTCMonth() + 1) + '월 ' + d.getUTCDate() + '일 (' + WD[d.getUTCDay()] + ')</span><button type="button" aria-label="닫기">✕</button></h6>' +
+        (list.length ? list.map(e => '<div class="pe"><b>' + esc5(e.time) + '</b><span>' + esc5(e.title) + '</span>' +
+          '<small><i style="background:' + esc5(e.color || '#5ff2e0') + '"></i>' + esc5(e.cal || '') + (e.end && /^\d/.test(e.time) ? ' · ~' + esc5(e.end) : '') + (e.loc ? ' · ' + esc5(e.loc) : '') + '</small></div>').join('')
+          : '<div class="none">일정이 없습니다</div>') +
+        '<button type="button" class="add">＋ 이 날 일정 추가하기</button>';
+      pop.querySelector('h6 button').onclick = (e) => { e.stopPropagation(); calHidePop(); };
+      pop.querySelector('.add').onclick = (e) => {
+        e.stopPropagation(); calHidePop();
+        const inp = $('input'); if (!inp) return;
+        inp.value = (d.getUTCMonth() + 1) + '월 ' + d.getUTCDate() + '일 ';
+        inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length);
+        inp.placeholder = '예: 3시 SONY 미팅 캘린더에 넣어줘';
+      };
+      // 위치: 누른 날짜 바로 아래 (아래 공간이 없으면 위)
+      const hud = $('calHud');
+      pop.classList.add('show');
+      const left = Math.max(0, Math.min(cell.offsetLeft + cell.offsetWidth / 2 - pop.offsetWidth / 2, hud.clientWidth - pop.offsetWidth));
+      let top = cell.offsetTop + cell.offsetHeight + 6;
+      if (top + pop.offsetHeight > hud.clientHeight + 40) top = Math.max(0, cell.offsetTop - pop.offsetHeight - 6);
+      pop.style.left = left + 'px'; pop.style.top = top + 'px';
+    }
+    function calHidePop() { $('calPop').classList.remove('show'); CAL.sel = ''; document.querySelectorAll('.cal-d.sel').forEach(x => x.classList.remove('sel')); }
+    document.addEventListener('click', (e) => { if (!e.target.closest || !e.target.closest('#calPop')) { if ($('calPop').classList.contains('show')) calHidePop(); } });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') calHidePop(); });
+
+    async function calGo(ym) {
+      calHidePop();
+      calRender(ym, true);
+      if (CAL.cache[ym]) return;
+      try {
+        const r = await api({ action: 'calendar', op: 'month', ym });
+        if (r && r.ok && r.data) { CAL.cache[ym] = r.data; if (CAL.ym === ym) calRender(ym, false); }
+        else $('calFoot').textContent = '불러오지 못했습니다 · 서버 14차 배포 확인';
+      } catch (e) { $('calFoot').textContent = '불러오지 못했습니다'; }
+    }
+    $('calPrev').onclick = (e) => { e.stopPropagation(); calGo(calShift(CAL.ym || calYmNow(), -1)); };
+    $('calNext').onclick = (e) => { e.stopPropagation(); calGo(calShift(CAL.ym || calYmNow(), 1)); };
+    $('calToday').onclick = (e) => { e.stopPropagation(); calGo(calYmNow()); };
+    calRender(calYmNow(), false);
+
+    // 오늘 일정 목록: 캘린더 색 점, 지금 진행 중 강조, 지난 일정 흐리게, 누르면 장소·캘린더 펼침
+    function renderTodayEvents(evs) {
+      const evList = $('evList'); if (!evList || !evs || !evs.length || !('cal' in evs[0])) return;
+      const nowHM = new Date(Date.now() + 9 * 3600000).toISOString().slice(11, 16);
+      evList.innerHTML = '';
+      evs.forEach(ev => {
+        const li = document.createElement('li');
+        const timed = /^\d/.test(ev.time);
+        const isNow = timed && ev.time <= nowHM && (ev.end || '23:59') > nowHM;
+        const past = timed && (ev.end || ev.time) <= nowHM;
+        li.className = 'ev2' + (isNow ? ' now' : past ? ' past' : '');
+        li.innerHTML = '<span class="cdot" style="background:' + esc5(ev.color || '#5ff2e0') + ';color:' + esc5(ev.color || '#5ff2e0') + '"></span>' +
+          '<span class="t">' + esc5(ev.time) + (timed && ev.end ? '<small style="opacity:.6">~' + esc5(ev.end) + '</small>' : '') + '</span><span>' + esc5(ev.title) + (isNow ? ' <span class="chip warn">진행 중</span>' : '') + '</span>' +
+          '<div class="meta">' + esc5(ev.cal || '') + (ev.loc ? ' · 📍 ' + esc5(ev.loc) : '') + '</div>';
+        li.title = '눌러서 장소·캘린더 보기';
+        li.onclick = () => li.classList.toggle('open');
+        evList.appendChild(li);
+      });
+    }
+
+    const _renderDashboard14 = renderDashboard;
+    renderDashboard = function (d) {
+      _renderDashboard14(d);
+      try { renderTodayEvents(d.events); } catch (e) { }
+      if (d && d.month && d.month.ym) {
+        CAL.cache[d.month.ym] = d.month;
+        if (!CAL.ym || CAL.ym === d.month.ym) calRender(d.month.ym, false);
+      }
+    };
+    if (typeof lastDash !== 'undefined' && lastDash) { try { renderDashboard(lastDash); } catch (e) { } }
 
     /* ==========================================================
        102. 상세 창: 거점 탭으로 바로 이동 + 칩(운송중·출하 예정·도착)으로 걸러 보기 (13차)
