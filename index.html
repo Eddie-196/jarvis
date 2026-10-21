@@ -1035,6 +1035,27 @@
 
 
 
+
+    /* --- 105. 호출 대기(STANDBY) 태극 코어 (15차): 고리는 위 빨강·아래 파랑, 가운데 태극 문양, 깃발처럼 펄럭임 --- */
+    .tg-core { opacity: 0; transition: opacity .5s ease; }
+    body.stark .reactor[data-state="standby"] .tg-core { opacity: 1; }
+    body.stark .reactor[data-state="standby"] .hy-hex { opacity: 0; transition: opacity .4s; }
+    /* 대기 중에는 고리 회전을 멈춰 빨강(위)·파랑(아래) 구분이 항상 제자리에 오게 함 (움직임은 펄럭임 효과로) */
+    body.stark .reactor[data-state="standby"] .hy-spin { animation: none; }
+    body.stark .reactor[data-state="standby"] .hyper svg [stroke="#14e8e8"] { stroke: url(#tgSplit); }
+    body.stark .reactor[data-state="standby"] .hyper svg [stroke^="rgba(20,232,232"] { stroke: url(#tgSplitSoft); }
+    body.stark .reactor[data-state="standby"] .hyper svg [stroke^="rgba(95,252,255"] { stroke: url(#tgSplitSoft); }
+    body.stark .reactor[data-state="standby"] .hyper svg [fill="rgba(0,20,22,.6)"] { fill: rgba(8, 10, 22, .72); stroke: url(#tgSplit); }
+    body.stark .reactor[data-state="standby"] #hyG stop:nth-child(1) { stop-color: #ffffff; stop-opacity: .35; }
+    body.stark .reactor[data-state="standby"] #hyG stop:nth-child(2) { stop-color: #9fb6ff; stop-opacity: .12; }
+    body.stark .reactor[data-state="standby"] #hyAll { filter: url(#tgWave); }
+    body.stark .reactor[data-state="standby"] { filter: drop-shadow(0 -10px 22px rgba(205, 46, 58, .35)) drop-shadow(0 12px 22px rgba(0, 71, 160, .4)); }
+    body.stark .reactor[data-state="standby"] .core-label { fill: #ffffff; paint-order: stroke; stroke: rgba(0, 0, 0, .55); stroke-width: 3px; }
+    body.stark .reactor[data-state="standby"] .core-sub { fill: #eef3ff; paint-order: stroke; stroke: rgba(0, 0, 0, .55); stroke-width: 2.5px; }
+    .tg-core .tg-spin { transform-origin: 200px 200px; transform-box: view-box; animation: tgSway 7s ease-in-out infinite; }
+    @keyframes tgSway { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+    @media (prefers-reduced-motion: reduce) { body.stark .reactor[data-state="standby"] #hyAll { filter: none; } .tg-core .tg-spin { animation: none; } }
+
     /* --- 104. 작업 중(생각·명령 수행) 효과 (15차): 코어가 붉게 달아오르며 충격파·빔·에너지 입자 --- */
     .hyper svg, #reactorSvg { transition: filter .45s ease; }
     .hyper svg * { transition: stroke .22s ease, fill .22s ease, stop-color .22s ease; }
@@ -4872,6 +4893,47 @@
 
 
 
+
+    /* ==========================================================
+       105. 호출 대기 태극 코어 (15차)
+            고리 색을 위 빨강(#CD2E3A)·아래 파랑(#0047A0)으로 나누고, 가운데에 태극 문양,
+            코어 전체가 바람에 깃발 날리듯 일렁임 (SVG 물결 필터)
+       ========================================================== */
+    const UI_VERSION = '15차';
+    (function taegeukCore() {
+      const svg = $('hyperSvg'); if (!svg) return;
+      const NS = 'http://www.w3.org/2000/svg';
+      // 1) 내용 전체를 한 묶음(#hyAll)으로 감싸서 물결 필터를 한 번에 적용
+      const all = document.createElementNS(NS, 'g'); all.id = 'hyAll';
+      Array.from(svg.childNodes).forEach(n => { if (n.nodeName !== 'defs') all.appendChild(n); });
+      svg.appendChild(all);
+      // 2) 색 나눔 그라데이션 + 펄럭임 필터
+      const defs = svg.querySelector('defs') || svg.insertBefore(document.createElementNS(NS, 'defs'), svg.firstChild);
+      const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      defs.insertAdjacentHTML('beforeend',
+        '<linearGradient id="tgSplit" gradientUnits="userSpaceOnUse" x1="0" y1="10" x2="0" y2="390">' +
+          '<stop offset="0" stop-color="#ff4b55"/><stop offset=".49" stop-color="#cd2e3a"/><stop offset=".51" stop-color="#1d63d6"/><stop offset="1" stop-color="#0047a0"/></linearGradient>' +
+        '<linearGradient id="tgSplitSoft" gradientUnits="userSpaceOnUse" x1="0" y1="10" x2="0" y2="390">' +
+          '<stop offset="0" stop-color="rgba(255,90,100,.55)"/><stop offset=".49" stop-color="rgba(205,46,58,.5)"/><stop offset=".51" stop-color="rgba(60,120,230,.5)"/><stop offset="1" stop-color="rgba(0,71,160,.55)"/></linearGradient>' +
+        '<filter id="tgWave" x="-10%" y="-10%" width="120%" height="120%">' +
+          '<feTurbulence type="fractalNoise" baseFrequency="0.010 0.022" numOctaves="2" seed="7" result="n">' +
+            (reduce ? '' : '<animate attributeName="baseFrequency" dur="5s" values="0.010 0.022;0.014 0.030;0.009 0.018;0.010 0.022" repeatCount="indefinite"/>') +
+          '</feTurbulence>' +
+          '<feDisplacementMap in="SourceGraphic" in2="n" scale="8" xChannelSelector="R" yChannelSelector="G">' +
+            (reduce ? '' : '<animate attributeName="scale" dur="3.2s" values="5;11;6;9;5" repeatCount="indefinite"/>') +
+          '</feDisplacementMap></filter>');
+      // 3) 가운데 태극 문양 (위 빨강 · 아래 파랑, S자 경계)
+      const g = document.createElementNS(NS, 'g'); g.setAttribute('class', 'tg-core');
+      g.innerHTML = '<g class="tg-spin">' +
+        '<circle cx="200" cy="200" r="72" fill="#0047a0"/>' +
+        '<path d="M128 200 A72 72 0 0 1 272 200 A36 36 0 0 1 200 200 A36 36 0 0 0 128 200 Z" fill="#cd2e3a"/>' +
+        '<circle cx="200" cy="200" r="72" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1.5"/>' +
+        '<circle cx="200" cy="200" r="72" fill="url(#hyG)" opacity=".55"/></g>';
+      // 육각 격자 바로 앞(같은 위치)에 넣어 고리 안쪽 코어 자리에 보이게
+      const hex = all.querySelector('.hy-hex');
+      all.insertBefore(g, hex || null);
+    })();
+
     /* ==========================================================
        104. 작업 중 효과 (15차): 자비스가 생각하거나 명령을 수행하는 동안
             코어가 붉게 달아오르고, 충격파·회전 빔·에너지 입자·처리 숫자가 움직임
@@ -5116,7 +5178,7 @@
     renderDashboard = function (d) {
       _renderDashboard8(d);
       const el = $('sysVer'); if (!el || !d) return;
-      el.textContent = d.version || '예전 서버 (새 버전 배포 필요)';
+      el.textContent = (d.version || '예전 서버 (새 버전 배포 필요)') + ' · 화면 ' + UI_VERSION;   // 화면 파일 버전도 함께 표시 (깃허브 교체 확인용)
       el.style.color = d.version ? '' : '#ffb547';
       // 12차: 팀 ORDER STATUS 파일이 마지막으로 반영된 시각과 변경 건수
       const od = $('sysOrder');
