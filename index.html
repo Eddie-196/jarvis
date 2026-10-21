@@ -1031,6 +1031,33 @@
     .mem-cell { cursor: pointer; transition: transform .15s, border-color .15s, box-shadow .15s; }
     .mem-cell:hover { transform: translateY(-2px) scale(1.03); border-color: var(--cyan); box-shadow: 0 6px 18px rgba(0, 0, 0, .35), 0 0 14px var(--glow); }
 
+
+    /* --- 101. 파이프라인 SONY 거점(Site) 카드 (12차) : 반투명 유리 카드 + 가장자리 빛 --- */
+    .osite-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 7px; }
+    .osite { position: relative; overflow: hidden; padding: 9px 10px 8px; border-radius: 12px; cursor: pointer;
+      background: linear-gradient(140deg, rgba(63, 208, 255, .12), rgba(63, 208, 255, .02) 60%), rgba(6, 18, 30, .55);
+      border: 1px solid rgba(63, 208, 255, .2); backdrop-filter: blur(6px);
+      transition: transform .18s, border-color .18s, box-shadow .18s; }
+    .osite::after { content: ''; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 35%, rgba(160, 235, 255, .16) 50%, transparent 65%);
+      transform: translateX(-120%); transition: transform .7s; pointer-events: none; }
+    .osite:hover { transform: translateY(-2px); border-color: var(--cyan); box-shadow: 0 8px 20px rgba(0, 0, 0, .35), 0 0 14px var(--glow); }
+    .osite:hover::after { transform: translateX(120%); }
+    .osite .o-top { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
+    .osite .o-code { font-family: var(--mono); font-size: 14px; font-weight: 700; color: #e6f8ff; letter-spacing: .5px; }
+    .osite .o-reg { font-size: 10.5px; color: var(--muted); white-space: nowrap; }
+    .osite .o-cnt { margin-top: 4px; display: flex; gap: 4px; flex-wrap: wrap; }
+    .osite .o-next { margin-top: 5px; font-size: 11px; color: var(--muted); line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .osite .o-next b { font-family: var(--mono); color: var(--teal); font-weight: 600; }
+    .osite.soon { border-color: rgba(255, 181, 71, .5); }
+    .osite.soon .o-next b { color: var(--amber); }
+    .osite.soon::before { content: ''; position: absolute; top: 8px; right: 8px; width: 6px; height: 6px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 8px var(--amber); animation: oPulse 1.6s ease-in-out infinite; }
+    .osite.soon .o-reg { margin-right: 10px; }
+    .osite.idle { opacity: .55; }
+    @keyframes oPulse { 50% { opacity: .25; transform: scale(.7); } }
+    .ship-list li.osite-wrap { display: block !important; width: 100%; grid-column: 1 / -1; flex: 1 1 100%; list-style: none; padding: 0; margin: 0; border: 0; background: none; }
+    .osite-foot { margin-top: 6px; font-size: 10.5px; color: var(--muted); text-align: right; }
+    @media (prefers-reduced-motion: reduce) { .osite.soon::before { animation: none; } .osite::after { display: none; } }
+
     /* --- 상세 창 (항목을 누르면 열림) --- */
     .dt-bg { position: fixed; inset: 0; z-index: 30; display: none; align-items: center; justify-content: center; padding: 16px; background: rgba(0, 6, 16, .62); backdrop-filter: blur(6px); }
     .dt-bg.show { display: flex; }
@@ -1447,7 +1474,7 @@
 
         <!-- 샘플·개발 진행 보드 + 선적 추적 (정보업무.gs) -->
         <section class="panel">
-          <div class="panel-title">PIPELINE <small>샘플 진행 · 선적</small></div>
+          <div class="panel-title">PIPELINE <small id="pipeSub">샘플 진행 · 선적</small></div>
           <div class="kanban" id="kanban"><div class="kcol"><h5>연결 후 표시됩니다</h5></div></div>
           <ul class="ship-list" id="shipList"></ul>
         </section>
@@ -4696,6 +4723,42 @@
       document.querySelector('.panel.dt').classList.toggle('wide', isProd);
       if (isProd) pfRender(d.families);
     };
+
+
+    /* ==========================================================
+       101. 파이프라인: SONY 거점(Site)별 출하 현황 (12차)
+            ORDER STATUS 파일 기준 · VESTEL 제외 · 카드를 누르면 상세 창
+       ========================================================== */
+    const _renderPipeline12 = renderPipeline;
+    renderPipeline = function (d) {
+      _renderPipeline12(d);
+      const os = d && d.orderSites;
+      if (!os || !os.sites) return;              // 오더 파일이 아직 없으면 예전 선적 목록 유지
+      const sl = $('shipList'); sl.innerHTML = '';
+      $('pipeSub').textContent = '샘플 진행 · SONY 출하 (ORDER ' + (os.file || '-') + ')';
+      const in3 = new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10);
+      const grid = document.createElement('div'); grid.className = 'osite-grid';
+      os.sites.forEach(s => {
+        const el = document.createElement('div');
+        const near = (s.next && s.next.date <= in3) || (s.nextEta && s.nextEta.date <= in3);
+        el.className = 'osite' + (near ? ' soon' : '') + (!s.transit && !s.planned && !s.undated ? ' idle' : '');
+        el.title = '눌러서 ' + s.site + ' 상세 보기';
+        el.innerHTML = '<div class="o-top"><span class="o-code">' + esc5(s.site) + '</span><span class="o-reg">' + esc5(s.region) + '</span></div>' +
+          '<div class="o-cnt">' + (s.transit ? '<span class="chip warn">운송 ' + s.transit + '</span>' : '') +
+          (s.planned ? '<span class="chip">예정 ' + s.planned + '</span>' : '') +
+          (s.undated ? '<span class="chip">미정 ' + Number(s.undated).toLocaleString() + '</span>' : '') +
+          (!s.transit && !s.planned && !s.undated ? '<span class="chip ok">진행 없음</span>' : '') + '</div>' +
+          '<div class="o-next">' + (s.next ? '출하 <b>' + md5(s.next.date) + '</b> ' + esc5(s.next.text) : (s.nextEta ? '도착 <b>' + md5(s.nextEta.date) + '</b> ' + esc5(s.nextEta.text) : (s.undated ? '출하일 미정 오더 <b>' + Number(s.undated).toLocaleString() + '</b>장' : '예정된 출하 없음'))) + '</div>';
+        el.onclick = () => openDetail('osite', s.site);
+        grid.appendChild(el);
+      });
+      const li = document.createElement('li'); li.className = 'osite-wrap'; li.appendChild(grid);
+      const foot = document.createElement('div'); foot.className = 'osite-foot';
+      foot.textContent = os.at ? '반영 ' + String(os.at).slice(5) + ' · 도착분은 지난달 기록까지' : '';
+      li.appendChild(foot);
+      sl.appendChild(li);
+    };
+    if (typeof lastDash !== 'undefined' && lastDash) { try { renderPipeline(lastDash); } catch (e) { } }
 
     /* ----- 서버 버전 표시: 새 서버 파일이 배포됐는지 SYSTEM 칸에서 바로 확인 (8차) ----- */
     const _renderDashboard8 = renderDashboard;
