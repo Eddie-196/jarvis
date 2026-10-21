@@ -1036,25 +1036,64 @@
 
 
 
-    /* --- 105. 호출 대기(STANDBY) 태극 코어 (15차): 고리는 위 빨강·아래 파랑, 가운데 태극 문양, 깃발처럼 펄럭임 --- */
-    .tg-core { opacity: 0; transition: opacity .5s ease; }
-    body.stark .reactor[data-state="standby"] .tg-core { opacity: 1; }
-    body.stark .reactor[data-state="standby"] .hy-hex { opacity: 0; transition: opacity .4s; }
-    /* 대기 중에는 고리 회전을 멈춰 빨강(위)·파랑(아래) 구분이 항상 제자리에 오게 함 (움직임은 펄럭임 효과로) */
-    body.stark .reactor[data-state="standby"] .hy-spin { animation: none; }
-    body.stark .reactor[data-state="standby"] .hyper svg [stroke="#14e8e8"] { stroke: url(#tgSplit); }
-    body.stark .reactor[data-state="standby"] .hyper svg [stroke^="rgba(20,232,232"] { stroke: url(#tgSplitSoft); }
-    body.stark .reactor[data-state="standby"] .hyper svg [stroke^="rgba(95,252,255"] { stroke: url(#tgSplitSoft); }
-    body.stark .reactor[data-state="standby"] .hyper svg [fill="rgba(0,20,22,.6)"] { fill: rgba(8, 10, 22, .72); stroke: url(#tgSplit); }
-    body.stark .reactor[data-state="standby"] #hyG stop:nth-child(1) { stop-color: #ffffff; stop-opacity: .35; }
-    body.stark .reactor[data-state="standby"] #hyG stop:nth-child(2) { stop-color: #9fb6ff; stop-opacity: .12; }
-    body.stark .reactor[data-state="standby"] #hyAll { filter: url(#tgWave); }
-    body.stark .reactor[data-state="standby"] { filter: drop-shadow(0 -10px 22px rgba(205, 46, 58, .35)) drop-shadow(0 12px 22px rgba(0, 71, 160, .4)); }
-    body.stark .reactor[data-state="standby"] .core-label { fill: #ffffff; paint-order: stroke; stroke: rgba(0, 0, 0, .55); stroke-width: 3px; }
-    body.stark .reactor[data-state="standby"] .core-sub { fill: #eef3ff; paint-order: stroke; stroke: rgba(0, 0, 0, .55); stroke-width: 2.5px; }
-    .tg-core .tg-spin { transform-origin: 200px 200px; transform-box: view-box; animation: tgSway 7s ease-in-out infinite; }
-    @keyframes tgSway { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
-    @media (prefers-reduced-motion: reduce) { body.stark .reactor[data-state="standby"] #hyAll { filter: none; } .tg-core .tg-spin { animation: none; } }
+
+    /* --- 106. 상태별 환경 + 홀로그램 태극 코어 + 한반도 호랑이 (16차) --------------------------------
+       호출 대기 : 홀로그램 태극(네온 선) · 4괘 궤도 · 위 붉은/아래 푸른 오로라 · 금빛 한반도 호랑이
+       명령 수행 : 붉은 코어(104) · 화면 전체가 적색 계열 · 호랑이도 붉게 달아오름
+       기본 상태 : 청록 HUD                                                                          */
+    @property --cyan { syntax: '<color>'; inherits: true; initial-value: #14e8e8; }
+    @property --teal { syntax: '<color>'; inherits: true; initial-value: #5ffcff; }
+    @property --line { syntax: '<color>'; inherits: true; initial-value: rgba(20, 232, 232, .32); }
+    @property --line-strong { syntax: '<color>'; inherits: true; initial-value: rgba(60, 255, 255, .75); }
+    @property --glow { syntax: '<color>'; inherits: true; initial-value: rgba(20, 232, 232, .35); }
+    @property --tiger { syntax: '<color>'; inherits: true; initial-value: #5ffcff; }
+    body.stark { --tiger: #5ffcff; transition: --cyan .7s ease, --teal .7s ease, --line .7s ease, --line-strong .7s ease, --glow .7s ease, --tiger .7s ease; }
+    body.stark[data-state="standby"] { --cyan: #7ab4ff; --teal: #ff8a94; --line: rgba(130, 165, 255, .30); --line-strong: rgba(255, 130, 140, .7); --glow: rgba(130, 150, 255, .32); --tiger: #ffd27a; }
+    body.stark[data-state="thinking"] { --cyan: #ff4d42; --teal: #ff9a82; --line: rgba(255, 75, 65, .36); --line-strong: rgba(255, 120, 100, .85); --glow: rgba(255, 50, 40, .42); --tiger: #ff5040; }
+    /* 배경 환경 층 (화면 맨 뒤) */
+    .env-fx { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+    .env-fx i { position: absolute; inset: -20%; opacity: 0; transition: opacity .8s ease; }
+    .env-fx .e-red { background: radial-gradient(45% 38% at 50% 16%, rgba(224, 49, 63, .30), transparent 70%), radial-gradient(30% 25% at 18% 30%, rgba(255, 80, 90, .12), transparent 70%); animation: envDrift 14s ease-in-out infinite; }
+    .env-fx .e-blue { background: radial-gradient(45% 38% at 50% 86%, rgba(22, 103, 232, .34), transparent 70%), radial-gradient(30% 25% at 82% 72%, rgba(70, 140, 255, .14), transparent 70%); animation: envDrift 17s ease-in-out infinite reverse; }
+    .env-fx .e-heat { background: radial-gradient(60% 50% at 50% 45%, rgba(255, 40, 30, .20), rgba(80, 0, 0, .25) 60%, rgba(30, 0, 0, .45)); }
+    .env-fx .e-scan { inset: 0; background: linear-gradient(transparent 0, rgba(255, 70, 60, .10) 50%, transparent 100%) 0 0 / 100% 220px no-repeat; animation: envScan 2.6s linear infinite; }
+    body.stark[data-state="standby"] .env-fx .e-red, body.stark[data-state="standby"] .env-fx .e-blue { opacity: 1; }
+    body.stark[data-state="thinking"] .env-fx .e-heat, body.stark[data-state="thinking"] .env-fx .e-scan { opacity: 1; }
+    @keyframes envDrift { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(3%, -2%) scale(1.06); } }
+    @keyframes envScan { from { background-position: 0 -220px; } to { background-position: 0 110vh; } }
+    body.stark[data-state="standby"]::before { background-image: radial-gradient(rgba(170, 180, 255, .16) 1px, transparent 1.2px); }
+    body.stark[data-state="thinking"]::before { background-image: radial-gradient(rgba(255, 110, 100, .20) 1px, transparent 1.2px); }
+    /* 홀로그램 태극 코어 (호출 대기에서만) */
+    .tg-layer { position: absolute; inset: 0; z-index: 1; pointer-events: none; opacity: 0; transform: scale(.94); transition: opacity .55s ease, transform .55s ease; }
+    .tg-layer svg { width: 100%; height: 100%; overflow: visible; }
+    body.stark .reactor[data-state="standby"] .tg-layer { opacity: 1; transform: none; }
+    body.stark .hyper { transition: opacity .55s ease, transform .55s ease; }
+    body.stark .reactor[data-state="standby"] .hyper { opacity: 0; transform: scale(1.05); }
+    body.stark .reactor[data-state="standby"] { filter: drop-shadow(0 -8px 20px rgba(224, 49, 63, .28)) drop-shadow(0 10px 22px rgba(22, 103, 232, .32)); }
+    body.stark .reactor[data-state="standby"] .core-label { fill: #fff; paint-order: stroke; stroke: rgba(0, 0, 0, .6); stroke-width: 3px; }
+    body.stark .reactor[data-state="standby"] .core-sub { fill: #e6eeff; paint-order: stroke; stroke: rgba(0, 0, 0, .6); stroke-width: 2.5px; }
+    .tg-layer .spin { transform-origin: 200px 200px; transform-box: view-box; animation: hyRot 24s linear infinite; }
+    .tg-layer .spin.r { animation-direction: reverse; animation-duration: 16s; }
+    .tg-layer .spin.f { animation-duration: 9s; }
+    .tg-layer .spin.s { animation-duration: 40s; }
+    .tg-layer .flow { animation: tgFlow 6s linear infinite; }
+    @keyframes tgFlow { to { stroke-dashoffset: -400; } }
+    /* 한반도 호랑이 (리액터 뒤, 상태 색을 따라감) */
+    .tiger-map { position: absolute; left: 50%; top: 53%; width: 80%; height: 112%; transform: translate(-50%, -50%); z-index: 0; pointer-events: none;
+      opacity: .22; color: var(--tiger); transition: opacity .7s ease; }
+    .tiger-map svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 0 6px var(--tiger)); }
+    body.stark .reactor[data-state="standby"] .tiger-map { opacity: .42; }
+    body.stark .reactor[data-state="thinking"] .tiger-map { opacity: .42; }
+    body:not(.stark) .tiger-map { opacity: .12; }
+    .tiger-map .tm-scan { animation: tmScan 4.5s linear infinite; }
+    @keyframes tmScan { from { transform: translateY(-40px); } to { transform: translateY(640px); } }
+    .tiger-map .tm-eye { animation: tmEye 3.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    @keyframes tmEye { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+    .tiger-map .tm-tail { animation: tmTail 4s ease-in-out infinite; transform-box: view-box; transform-origin: 305px 395px; }
+    @keyframes tmTail { 50% { transform: rotate(-7deg); } }
+    @media (prefers-reduced-motion: reduce) {
+      .env-fx i, .tg-layer .spin, .tg-layer .flow, .tiger-map .tm-scan, .tiger-map .tm-eye, .tiger-map .tm-tail { animation: none !important; }
+    }
 
     /* --- 104. 작업 중(생각·명령 수행) 효과 (15차): 코어가 붉게 달아오르며 충격파·빔·에너지 입자 --- */
     .hyper svg, #reactorSvg { transition: filter .45s ease; }
@@ -4894,44 +4933,87 @@
 
 
 
+
     /* ==========================================================
-       105. 호출 대기 태극 코어 (15차)
-            고리 색을 위 빨강(#CD2E3A)·아래 파랑(#0047A0)으로 나누고, 가운데에 태극 문양,
-            코어 전체가 바람에 깃발 날리듯 일렁임 (SVG 물결 필터)
+       106. 상태별 환경 · 홀로그램 태극 코어(시안 1) · 한반도 호랑이 (16차)
        ========================================================== */
-    const UI_VERSION = '15차';
-    (function taegeukCore() {
-      const svg = $('hyperSvg'); if (!svg) return;
+    const UI_VERSION = '16차';
+    (function stateWorld16() {
       const NS = 'http://www.w3.org/2000/svg';
-      // 1) 내용 전체를 한 묶음(#hyAll)으로 감싸서 물결 필터를 한 번에 적용
-      const all = document.createElementNS(NS, 'g'); all.id = 'hyAll';
-      Array.from(svg.childNodes).forEach(n => { if (n.nodeName !== 'defs') all.appendChild(n); });
-      svg.appendChild(all);
-      // 2) 색 나눔 그라데이션 + 펄럭임 필터
-      const defs = svg.querySelector('defs') || svg.insertBefore(document.createElementNS(NS, 'defs'), svg.firstChild);
-      const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      defs.insertAdjacentHTML('beforeend',
-        '<linearGradient id="tgSplit" gradientUnits="userSpaceOnUse" x1="0" y1="10" x2="0" y2="390">' +
-          '<stop offset="0" stop-color="#ff4b55"/><stop offset=".49" stop-color="#cd2e3a"/><stop offset=".51" stop-color="#1d63d6"/><stop offset="1" stop-color="#0047a0"/></linearGradient>' +
-        '<linearGradient id="tgSplitSoft" gradientUnits="userSpaceOnUse" x1="0" y1="10" x2="0" y2="390">' +
-          '<stop offset="0" stop-color="rgba(255,90,100,.55)"/><stop offset=".49" stop-color="rgba(205,46,58,.5)"/><stop offset=".51" stop-color="rgba(60,120,230,.5)"/><stop offset="1" stop-color="rgba(0,71,160,.55)"/></linearGradient>' +
-        '<filter id="tgWave" x="-10%" y="-10%" width="120%" height="120%">' +
-          '<feTurbulence type="fractalNoise" baseFrequency="0.010 0.022" numOctaves="2" seed="7" result="n">' +
-            (reduce ? '' : '<animate attributeName="baseFrequency" dur="5s" values="0.010 0.022;0.014 0.030;0.009 0.018;0.010 0.022" repeatCount="indefinite"/>') +
-          '</feTurbulence>' +
-          '<feDisplacementMap in="SourceGraphic" in2="n" scale="8" xChannelSelector="R" yChannelSelector="G">' +
-            (reduce ? '' : '<animate attributeName="scale" dur="3.2s" values="5;11;6;9;5" repeatCount="indefinite"/>') +
-          '</feDisplacementMap></filter>');
-      // 3) 가운데 태극 문양 (위 빨강 · 아래 파랑, S자 경계)
-      const g = document.createElementNS(NS, 'g'); g.setAttribute('class', 'tg-core');
-      g.innerHTML = '<g class="tg-spin">' +
-        '<circle cx="200" cy="200" r="72" fill="#0047a0"/>' +
-        '<path d="M128 200 A72 72 0 0 1 272 200 A36 36 0 0 1 200 200 A36 36 0 0 0 128 200 Z" fill="#cd2e3a"/>' +
-        '<circle cx="200" cy="200" r="72" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1.5"/>' +
-        '<circle cx="200" cy="200" r="72" fill="url(#hyG)" opacity=".55"/></g>';
-      // 육각 격자 바로 앞(같은 위치)에 넣어 고리 안쪽 코어 자리에 보이게
-      const hex = all.querySelector('.hy-hex');
-      all.insertBefore(g, hex || null);
+      const r = $('reactor'); if (!r) return;
+
+      // 1) 배경 환경 층
+      const env = document.createElement('div'); env.className = 'env-fx'; env.setAttribute('aria-hidden', 'true');
+      env.innerHTML = '<i class="e-red"></i><i class="e-blue"></i><i class="e-heat"></i><i class="e-scan"></i>';
+      document.body.prepend(env);
+
+      // 2) 홀로그램 태극 코어 (시안 1): 네온 선 태극 + 4괘 궤도 + 위 빨강·아래 파랑 고리
+      const C = 200, P = (rr, a) => [C + Math.cos(a) * rr, C + Math.sin(a) * rr];
+      const arc = (rr, a0, a1, w, color, op, extra) => { const [x0, y0] = P(rr, a0), [x1, y1] = P(rr, a1);
+        return '<path d="M' + x0.toFixed(1) + ' ' + y0.toFixed(1) + ' A' + rr + ' ' + rr + ' 0 ' + ((a1 - a0) > Math.PI ? 1 : 0) + ' 1 ' + x1.toFixed(1) + ' ' + y1.toFixed(1) + '" fill="none" stroke="' + color + '" stroke-width="' + w + '" stroke-opacity="' + op + '" stroke-linecap="round" ' + (extra || '') + '/>'; };
+      const ticks = (r1, r2, n, color, op) => { let t = ''; for (let k = 0; k < n; k++) { const a = k / n * Math.PI * 2, [x0, y0] = P(r1, a), [x1, y1] = P(r2, a); t += '<line x1="' + x0.toFixed(1) + '" y1="' + y0.toFixed(1) + '" x2="' + x1.toFixed(1) + '" y2="' + y1.toFixed(1) + '" stroke="' + color + '" stroke-opacity="' + (k % 5 ? op * .45 : op) + '"/>'; } return t; };
+      const tri = (cx, cy, ang, bars) => { let t = '<g transform="translate(' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ') rotate(' + ang.toFixed(1) + ')">';
+        bars.forEach((b, i) => { const y = (i - 1) * 9.5 - 2.25; t += b ? '<rect x="-15" y="' + y + '" width="30" height="4.5" rx="1.2" fill="#eef5ff"/>' : '<rect x="-15" y="' + y + '" width="12.5" height="4.5" rx="1.2" fill="#eef5ff"/><rect x="2.5" y="' + y + '" width="12.5" height="4.5" rx="1.2" fill="#eef5ff"/>'; });
+        return t + '</g>'; };
+      // 태극기 배치: 건(좌상) 감(우상) 리(좌하) 곤(우하)
+      const four = [[-1, -1, [1, 1, 1]], [1, -1, [0, 1, 0]], [-1, 1, [1, 0, 1]], [1, 1, [0, 0, 0]]].map(([sx, sy, b]) => { const a = Math.atan2(sy, sx), [x, y] = P(128, a); return tri(x, y, a * 180 / Math.PI + 90, b); }).join('');
+      let t = '<defs>' +
+        '<linearGradient id="tgSp" gradientUnits="userSpaceOnUse" x1="0" y1="20" x2="0" y2="380"><stop offset="0" stop-color="#ff5a66"/><stop offset=".47" stop-color="#e0313f"/><stop offset=".53" stop-color="#1d63d6"/><stop offset="1" stop-color="#3d8bff"/></linearGradient>' +
+        '<linearGradient id="tgSs" gradientUnits="userSpaceOnUse" x1="0" y1="20" x2="0" y2="380"><stop offset="0" stop-color="#ff5a66" stop-opacity=".55"/><stop offset=".5" stop-color="#ffffff" stop-opacity=".25"/><stop offset="1" stop-color="#3d8bff" stop-opacity=".6"/></linearGradient>' +
+        '<filter id="tgGl" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>' +
+        '<filter id="tgGl2" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
+      t += '<circle cx="200" cy="200" r="190" fill="none" stroke="url(#tgSs)" stroke-width="1" stroke-dasharray="1 7"/>';
+      t += '<g class="spin r">' + arc(176, .2, 2.9, 3, 'url(#tgSp)', .9, 'filter="url(#tgGl)"') + arc(176, 3.3, 6.0, 3, 'url(#tgSp)', .9, 'filter="url(#tgGl)"') + '</g>';
+      t += '<g class="spin">' + ticks(150, 160, 72, '#cfe6ff', .5) + '</g>';
+      t += '<g class="spin f" filter="url(#tgGl)">' + four + '</g>';
+      t += '<circle cx="200" cy="200" r="98" fill="rgba(4,10,22,.78)" stroke="url(#tgSs)" stroke-width="1.5"/>';
+      t += '<g class="spin r" style="animation-duration:40s" filter="url(#tgGl2)"><g transform="rotate(-33.7 200 200)">' +
+        '<path d="M122 200 A78 78 0 0 1 278 200 A39 39 0 0 1 200 200 A39 39 0 0 0 122 200 Z" fill="rgba(224,49,63,.18)" stroke="#ff5a66" stroke-width="2.5"/>' +
+        '<path d="M122 200 A39 39 0 0 1 200 200 A39 39 0 0 0 278 200 A78 78 0 0 1 122 200 Z" fill="rgba(22,103,232,.2)" stroke="#3d8bff" stroke-width="2.5"/></g></g>';
+      t += '<circle class="flow" cx="200" cy="200" r="78" fill="none" stroke="#fff" stroke-opacity=".25" stroke-dasharray="2 5"/>';
+      const lay = document.createElement('div'); lay.className = 'tg-layer'; lay.setAttribute('aria-hidden', 'true');
+      lay.innerHTML = '<svg viewBox="0 0 400 400">' + t + '</svg>';
+      r.appendChild(lay);
+
+      // 3) 한반도 호랑이: 해안선(경도·위도 근사)을 이어 그린 몸통 + 줄무늬 + 눈·입·수염(백두산 쪽 머리), 호미곶 꼬리
+      const W = 340, H = 610, LON0 = 124.15, LAT0 = 43.05, SX = 47, SY = 59;
+      const pt = (lon, lat) => [(lon - LON0) * SX, (LAT0 - lat) * SY];
+      const coast = [[124.35,39.95],[124.6,40.15],[125.2,40.55],[126.0,41.05],[126.6,41.6],[127.3,41.5],[128.05,41.45],[128.15,42.0],[128.9,42.1],[129.5,42.45],[129.9,42.95],[130.3,42.75],[130.68,42.3],
+        [130.1,42.0],[129.75,41.75],[129.6,41.2],[129.2,40.75],[128.6,40.35],[128.0,40.0],[127.6,39.75],[127.45,39.3],[127.6,39.05],[128.0,38.65],[128.55,38.25],[128.9,37.8],[129.2,37.35],[129.42,36.95],[129.45,36.4],
+        [129.57,36.07],[129.42,35.75],[129.43,35.45],[129.15,35.12],[128.6,34.98],[128.05,34.85],[127.7,34.7],[127.2,34.55],[126.85,34.45],[126.5,34.3],[126.3,34.75],[126.4,35.15],[126.45,35.6],
+        [126.65,35.98],[126.5,36.35],[126.15,36.75],[126.5,37.0],[126.65,37.45],[126.45,37.7],[126.05,37.8],[125.65,37.95],[125.15,37.85],[124.75,38.15],[124.7,38.45],[125.15,38.65],[125.4,38.75],
+        [125.2,39.05],[125.05,39.45],[124.65,39.6]];
+      const path = 'M' + coast.map(c => pt(c[0], c[1]).map(v => v.toFixed(1)).join(' ')).join(' L') + ' Z';
+      const jeju = pt(126.55, 33.38);
+      // 줄무늬: 몸통을 가로지르는 끝이 뾰족한 불꽃 모양
+      const stripe = (lon, lat, len, ang, w) => { const [x, y] = pt(lon, lat), a = ang * Math.PI / 180, dx = Math.cos(a) * len, dy = Math.sin(a) * len, nx = -Math.sin(a) * w, ny = Math.cos(a) * w;
+        return '<path d="M' + (x - dx).toFixed(1) + ' ' + (y - dy).toFixed(1) + ' Q' + (x + nx).toFixed(1) + ' ' + (y + ny).toFixed(1) + ' ' + (x + dx).toFixed(1) + ' ' + (y + dy).toFixed(1) + ' Q' + (x - nx * .3).toFixed(1) + ' ' + (y - ny * .3).toFixed(1) + ' ' + (x - dx).toFixed(1) + ' ' + (y - dy).toFixed(1) + ' Z" fill="currentColor" opacity=".55"/>'; };
+      const stripes = [[126.0,40.4,34,25,7],[126.9,40.6,40,35,8],[127.6,40.9,36,40,7],[126.7,39.6,42,30,8],[127.2,38.9,44,32,9],[127.0,38.2,46,28,9],[127.6,37.6,46,30,9],[127.3,36.9,48,26,9],
+        [128.2,37.1,40,34,8],[127.6,36.2,50,24,10],[128.4,36.3,38,30,8],[127.2,35.5,48,20,9],[128.2,35.6,44,24,9],[126.9,35.0,34,14,7]].map(a => stripe.apply(null, a)).join('');
+      const [ex, ey] = pt(129.15, 41.95), [mx, my] = pt(130.55, 42.35), [hx, hy] = pt(129.57, 36.07);
+      let m = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet"><defs>' +
+        '<pattern id="tmDot" width="7" height="7" patternUnits="userSpaceOnUse"><circle cx="1.5" cy="1.5" r="1" fill="currentColor" opacity=".55"/></pattern>' +
+        '<linearGradient id="tmScanG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity="0"/><stop offset=".5" stop-color="currentColor" stop-opacity=".55"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient>' +
+        '<clipPath id="tmClip"><path d="' + path + '"/><ellipse cx="' + jeju[0].toFixed(1) + '" cy="' + jeju[1].toFixed(1) + '" rx="19" ry="9"/></clipPath></defs>';
+      m += '<g clip-path="url(#tmClip)"><rect width="' + W + '" height="' + H + '" fill="url(#tmDot)"/>' + stripes +
+        '<rect class="tm-scan" x="0" y="0" width="' + W + '" height="40" fill="url(#tmScanG)"/></g>';
+      m += '<path d="' + path + '" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>';
+      m += '<ellipse cx="' + jeju[0].toFixed(1) + '" cy="' + jeju[1].toFixed(1) + '" rx="19" ry="9" fill="none" stroke="currentColor" stroke-width="1.4"/>';
+      // 머리: 눈(깜빡임) · 귀 · 벌린 입과 송곳니 · 수염
+      m += '<g><path class="tm-eye" d="M' + (ex - 13) + ' ' + ey + ' Q' + ex + ' ' + (ey - 9) + ' ' + (ex + 13) + ' ' + ey + ' Q' + ex + ' ' + (ey + 7) + ' ' + (ex - 13) + ' ' + ey + ' Z" fill="currentColor" opacity=".95"/>' +
+        '<circle cx="' + ex + '" cy="' + ey + '" r="2.6" fill="#05080c"/>' +
+        '<path d="M' + (ex - 46) + ' ' + (ey - 20) + ' l10 -22 l12 20" fill="none" stroke="currentColor" stroke-width="2"/>' +
+        '<path d="M' + (mx - 30) + ' ' + (my - 16) + ' L' + (mx + 6) + ' ' + (my - 4) + ' M' + (mx - 30) + ' ' + (my + 8) + ' L' + (mx + 2) + ' ' + (my + 14) + '" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>' +
+        '<path d="M' + (mx - 18) + ' ' + (my - 10) + ' l4 9 l3 -8 M' + (mx - 16) + ' ' + (my + 11) + ' l4 -8 l3 9" fill="none" stroke="currentColor" stroke-width="1.6"/>' +
+        [-8, 0, 8].map(d => '<path d="M' + (mx - 40) + ' ' + (my + 24 + d) + ' q 26 ' + (d * .6) + ' 52 ' + (d * 1.8) + '" fill="none" stroke="currentColor" stroke-width="1" opacity=".7"/>').join('') + '</g>';
+      // 꼬리: 호미곶에서 동해로 휘어 올라감 (살랑임)
+      m += '<path class="tm-tail" d="M' + hx.toFixed(1) + ' ' + hy.toFixed(1) + ' C ' + (hx + 34).toFixed(1) + ' ' + (hy + 4).toFixed(1) + ' ' + (hx + 46).toFixed(1) + ' ' + (hy - 30).toFixed(1) + ' ' + (hx + 30).toFixed(1) + ' ' + (hy - 58).toFixed(1) +
+        '" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" opacity=".8" stroke-dasharray="10 5"/>';
+      // HUD 표식
+      m += '<text x="6" y="' + (H - 6) + '" font-family="Share Tech Mono, monospace" font-size="11" fill="currentColor" opacity=".8">KOREA · 猛虎氣像 · 33°N–43°N</text>';
+      m += '</svg>';
+      const tm = document.createElement('div'); tm.className = 'tiger-map'; tm.setAttribute('aria-hidden', 'true'); tm.innerHTML = m;
+      r.prepend(tm);
     })();
 
     /* ==========================================================
