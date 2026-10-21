@@ -4237,7 +4237,7 @@
         body.appendChild(sec);
       });
     }
-    function closeDetail() { $('dtBg').classList.remove('show'); dtStack.length = 0; if (!$('bbBg').classList.contains('show')) document.body.classList.remove('modal-open'); }
+    function closeDetail() { $('dtBg').classList.remove('show'); dtStack.length = 0; if ($('dtNav')) $('dtNav').style.display = 'none'; /* 거점 탭은 오더 상세에서만 보이게 */ if (!$('bbBg').classList.contains('show')) document.body.classList.remove('modal-open'); }
     $('dtClose').onclick = closeDetail;
     $('dtBack').onclick = () => { dtStack.pop(); const p = dtStack[dtStack.length - 1]; if (p) openDetail(p.kind, p.id, false); };
     $('dtBg').addEventListener('click', (e) => { if (e.target === $('dtBg')) closeDetail(); });
@@ -4858,6 +4858,7 @@
        100. 여행 플래너 창 (11차): 목적지·날짜를 넣으면 일자별 일정 문서를 만들어 줌
        ========================================================== */
     function openTrip() {
+      if ($('dtNav')) $('dtNav').style.display = 'none';   // 같은 창을 쓰므로 오더 거점 탭 숨김
       dtStack.length = 0;
       $('dtBg').classList.add('show'); document.body.classList.add('modal-open'); $('dtBack').classList.remove('on');
       $('dtTitle').textContent = '여행 플래너'; $('dtSub').textContent = '맛집·관광지·쇼핑·교통·숙소·경비를 일자별로 정리해 구글 문서로 만듭니다 (1~2분)'; $('dtChips').innerHTML = '';
