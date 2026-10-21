@@ -1032,6 +1032,24 @@
     .mem-cell:hover { transform: translateY(-2px) scale(1.03); border-color: var(--cyan); box-shadow: 0 6px 18px rgba(0, 0, 0, .35), 0 0 14px var(--glow); }
 
 
+
+    /* --- 102. 상세 창 거점 탭 + 칩 필터 (13차) --- */
+    .dt-nav { display: flex; flex: 0 0 auto; gap: 6px; padding: 10px 18px 2px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+    .dt-chips { flex: 0 0 auto; }
+    .dt-nav::-webkit-scrollbar { display: none; }
+    .dt-nav button { flex: 0 0 auto; font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: .4px; color: var(--muted); cursor: pointer;
+      padding: 5px 12px; border-radius: 99px; border: 1px solid rgba(63, 208, 255, .22); background: rgba(6, 18, 30, .55); backdrop-filter: blur(4px);
+      transition: color .15s, border-color .15s, box-shadow .15s, transform .15s; }
+    .dt-nav button:hover { color: #e6f8ff; border-color: var(--cyan); transform: translateY(-1px); }
+    .dt-nav button.on { color: #031018; background: linear-gradient(120deg, var(--cyan), var(--teal)); border-color: transparent; box-shadow: 0 0 14px var(--glow); }
+    .dt-chips .chip[data-filter] { cursor: pointer; padding: 3px 10px; font-size: 11px; transition: box-shadow .15s, transform .15s, opacity .15s; }
+    .dt-chips .chip[data-filter]:hover { transform: translateY(-1px); }
+    .dt-chips.filtering .chip[data-filter]:not(.on) { opacity: .45; }
+    .dt-chips .chip[data-filter].on { box-shadow: 0 0 0 1px currentColor, 0 0 12px var(--glow); opacity: 1; }
+    .dt-sec.hide { display: none; }
+    .dt-body.swap { animation: dtSwap .28s ease; }
+    @keyframes dtSwap { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: none; } }
+
     /* --- 101. 파이프라인 SONY 거점(Site) 카드 (12차) : 반투명 유리 카드 + 가장자리 빛 --- */
     .osite-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 7px; }
     .osite { position: relative; overflow: hidden; padding: 9px 10px 8px; border-radius: 12px; cursor: pointer;
@@ -1682,6 +1700,7 @@
           <ul class="sys">
             <li><span>서버 버전</span><span id="sysVer">-</span></li>
             <li><span>오더 파일</span><span id="sysOrder">-</span></li>
+            <li><span>보안</span><span id="sysSec">-</span></li>
             <li><span>서버 연결</span><span id="sysConn">확인 전</span></li>
             <li><span>음성 방식</span><span id="sysVoice">-</span></li>
             <li><span>마지막 응답 시간</span><span id="sysLatency">-</span></li>
@@ -4725,6 +4744,56 @@
     };
 
 
+
+    /* ==========================================================
+       102. 상세 창: 거점 탭으로 바로 이동 + 칩(운송중·출하 예정·도착)으로 걸러 보기 (13차)
+       ========================================================== */
+    const _renderDetail13 = renderDetail;
+    renderDetail = function (d) {
+      _renderDetail13(d);
+      // 1) 거점 탭
+      let nav = $('dtNav');
+      if (!nav) { nav = document.createElement('div'); nav.id = 'dtNav'; nav.className = 'dt-nav'; $('dtChips').parentNode.insertBefore(nav, $('dtChips')); }
+      nav.innerHTML = '';
+      nav.style.display = d && d.nav ? '' : 'none';
+      if (d && d.nav) {
+        d.nav.items.forEach(it => {
+          const b = document.createElement('button');
+          b.textContent = it.label; b.className = it.id === d.nav.current ? 'on' : '';
+          b.onclick = () => {
+            if (it.id === d.nav.current) return;
+            if (dtStack.length) dtStack[dtStack.length - 1] = { kind: d.nav.kind, id: it.id };   // 뒤로 가기 목록은 늘리지 않음
+            const body = $('dtBody'); body.classList.remove('swap'); void body.offsetWidth; body.classList.add('swap');
+            openDetail(d.nav.kind, it.id, false);
+          };
+          nav.appendChild(b);
+        });
+      }
+      // 2) 칩 필터: 누른 칩에 해당하는 칸만 보이기, 다시 누르거나 "전체"를 누르면 모두 보이기
+      const body = $('dtBody');
+      const secs = Array.from(body.querySelectorAll(':scope > .dt-sec'));
+      (d && d.sections || []).forEach((s, i) => { if (secs[i] && s.group) secs[i].dataset.group = s.group; });
+      const chipBox = $('dtChips');
+      const chipEls = Array.from(chipBox.querySelectorAll('.chip'));
+      (d && d.chips || []).forEach((c, i) => {
+        const el = chipEls[i]; if (!el || !c.filter) return;
+        el.dataset.filter = c.filter; el.title = c.filter === 'all' ? '모두 보기' : '이 항목만 보기';
+        el.onclick = () => {
+          const same = el.classList.contains('on') || c.filter === 'all';
+          chipEls.forEach(x => x.classList.remove('on'));
+          chipBox.classList.toggle('filtering', !same);
+          secs.forEach(sec => {
+            const g = sec.dataset.group;
+            const show = same || !g || g === c.filter;
+            sec.classList.toggle('hide', !show);
+            if (!same && g === c.filter) sec.classList.remove('closed');
+          });
+          if (!same) el.classList.add('on');
+          body.scrollTop = 0;
+        };
+      });
+    };
+
     /* ==========================================================
        101. 파이프라인: SONY 거점(Site)별 출하 현황 (12차)
             ORDER STATUS 파일 기준 · VESTEL 제외 · 카드를 누르면 상세 창
@@ -4773,6 +4842,14 @@
         const o = d.order;
         od.textContent = o && o.label ? o.label + ' · ' + String(o.at || '').slice(5) + ' · 변경 ' + (o.changes || 0) + '건' : '아직 없음';
         od.title = o && o.source ? '전송 경로: ' + o.source : '';
+      }
+      // 13차: 보안 상태 (정상 / 주의 n / 잠금)
+      const sc = $('sysSec');
+      if (sc) {
+        const s = d.security;
+        sc.textContent = !s ? '-' : s.locked ? '잠금 (' + s.until + '까지)' : s.status + (s.issues ? ' ' + s.issues + '건' : '');
+        sc.style.color = !s ? '' : s.locked ? '#ff6b6b' : s.issues ? '#ffb547' : '#4fffb0';
+        sc.title = s && s.at ? '최근 점검 ' + s.at + ' · 텔레그램 /security 로 자세히' : '';
       }
     };
     if (typeof lastDash !== 'undefined' && lastDash) renderDashboard(lastDash);
